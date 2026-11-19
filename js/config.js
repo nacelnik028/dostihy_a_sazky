@@ -6,14 +6,14 @@ export const GAME_NAME = 'Dostihová stáj';
 
 // Stáje (barevné skupiny koní). Index stáje se používá v BOARD.
 export const STABLES = [
-  { name: 'Stáj Podlesí', color: '#8d5a2b' },
-  { name: 'Stáj Modrý vrch', color: '#4fb3e8' },
-  { name: 'Stáj Vřesoviště', color: '#c056a8' },
-  { name: 'Stáj Zlatý klas', color: '#f28c1b' },
-  { name: 'Stáj Červený mlýn', color: '#d63a3a' },
+  { name: 'Stáj Podlesí', color: '#f28c1b' },
+  { name: 'Stáj Modrý vrch', color: '#8d5a2b' },
+  { name: 'Stáj Vřesoviště', color: '#4fb3e8' },
+  { name: 'Stáj Zlatý klas', color: '#7bc96f' },
+  { name: 'Stáj Červený mlýn', color: '#c056a8' },
   { name: 'Stáj Slunečnice', color: '#e9c718' },
   { name: 'Stáj Zelený háj', color: '#2e9e4f' },
-  { name: 'Stáj Půlnoc', color: '#2c3f9e' },
+  { name: 'Stáj Půlnoc', color: '#8e44ad' },
 ];
 
 export const RULES = {
