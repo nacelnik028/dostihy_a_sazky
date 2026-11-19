@@ -18,6 +18,9 @@ const params = new URLSearchParams(location.search);
 const LOCAL = params.has('local');
 const IS_TOUCH = window.matchMedia && matchMedia('(hover: none)').matches;
 const JAIL = BOARD.findIndex((b) => b.type === 'jail');
+// názvy polí do textů pravidel (mění se v config.js)
+const SERVICE_NAMES = E.SERVICES.map((i) => BOARD[i].name).join(' a ');
+const SKIP_NAME = (BOARD.find((b) => b.type === 'skip') || { name: 'Vynechání tahu' }).name;
 const app = $('#app');
 const lsGet = (k) => {
   try {
@@ -164,8 +167,6 @@ function showHome(prefill = '', msg = '') {
       </div>
       <ul class="features">
         <li><b>2–6</b><span>hráčů</span></li>
-        <li><b>Online</b><span>každý na svém zařízení</span></li>
-        <li><b>0 Kč</b><span>bez registrace</span></li>
       </ul>
       <button class="btn ghost" data-a="rules">${icon('book')} Jak se hraje</button>
     </div>`;
@@ -526,7 +527,8 @@ function reactTo(prev, s) {
 }
 
 function buzz() {
-  if (sound.on && navigator.vibrate) {
+  const active = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+  if (sound.on && navigator.vibrate && active) {
     try {
       navigator.vibrate([70, 50, 70]);
     } catch {}
@@ -916,7 +918,7 @@ async function animWalk(pid, from, steps) {
   A.disp[pid] = from;
   const dir = Math.sign(steps);
   const n = Math.abs(steps);
-  const dt = n > 12 ? 115 : 170;
+  const dt = n > 20 ? 75 : n > 12 ? 110 : 170;
   for (let k = 1; k <= n; k++) {
     const pos = (from + dir * k + 40) % 40;
     A.disp[pid] = pos;
@@ -1021,10 +1023,10 @@ function drawMe() {
             : `<p class="hint">Po koupi ti zůstane <b>${E.fmt(me.money - b.price)}</b>.</p>`
         }${tools()}`;
     } else {
-      acts = `${trainingOffer(s)}<button class="btn big" data-a="endTurn" data-primary>Ukončit tah ➜ ${KBD}</button>${tools(true)}`;
+      acts = `${trainingOffer(s)}<button class="btn big" data-a="endTurn" data-primary>Ukončit tah → ${KBD}</button>${tools(true)}`;
     }
   } else {
-    acts = `<p class="status"><span class="tok xs" style="--pc:${cp.color}">${horse()}</span> Na tahu je ${nameHtml(cp)}.</p>${tools()}`;
+    acts = `<p class="status"><span class="tok xs" style="--pc:${cp.color}">${horse()}</span><span>Na tahu je ${nameHtml(cp)}.</span></p>${tools()}`;
   }
   const skipNote =
     me.skip > 0 && s.phase === 'playing' ? '<div class="note small">Kůň kulhá – příští tah vynecháš. Do té doby dostáváš za koně jen základní poplatek.</div>' : '';
@@ -1143,7 +1145,7 @@ const DECK_LOG = new RegExp(` – (${Object.values(DECKS).map((d) => d.name).joi
 function logType(m) {
   if (/^Na tahu je /.test(m)) return 'turn';
   if (DECK_LOG.test(m)) return 'card';
-  if (/^Bankrot/.test(m)) return 'bad';
+  if (/^Bankrot|to vzdává|vyřazuje ze hry/.test(m)) return 'bad';
   if (/Vítěz|Konec hry|pořádá Velkou cenu/.test(m)) return 'win';
   if (/^Hra začíná|^Nová hra/.test(m)) return 'win';
   if (/kupuje|uzavírají obchod/.test(m)) return 'buy';
@@ -1163,8 +1165,8 @@ function drawLog() {
     .map((l) => {
       const t = logType(l.m);
       const fresh = l.i > seen ? ' fresh' : '';
-      if (t === 'turn') return `<div class="le turn${fresh}"><span>${logHtml(l.m.replace(/^Na tahu je /, '').replace(/\.$/, ''))}</span></div>`;
-      return `<div class="le ${t}${fresh}">${logHtml(l.m)}</div>`;
+      if (t === 'turn') return `<div class="le turn${fresh}"><span>na tahu ${logHtml(l.m.replace(/^Na tahu je /, '').replace(/\.$/, ''))}</span></div>`;
+      return `<div class="le${t ? ' lk-' + t : ''}${fresh}">${logHtml(l.m)}</div>`;
     })
     .join('');
   A.logSeen = s.logSeq;
@@ -1287,7 +1289,7 @@ function sqModal(i) {
       .map((n) => `<tr><td>${n} ${plural(n, 'žokeje', 'žokeje', 'žokejů')}</td><td>${E.fmt(RULES.jockeyRent[n])}</td></tr>`)
       .join('')}</table>`;
   } else if (b.type === 'service') {
-    h += `<p>Poplatek je hod kostkou × <b>${RULES.serviceMult[1]}</b>. Vlastní-li majitel obě služby (Veterinář i Kovář), platí se hod × <b>${RULES.serviceMult[2]}</b>.</p>`;
+    h += `<p>Poplatek je hod kostkou × <b>${RULES.serviceMult[1]}</b>. Vlastní-li majitel obě služby (${esc(SERVICE_NAMES)}), platí se hod ×<b>${RULES.serviceMult[2]}</b>.</p>`;
   } else if (b.type === 'card') {
     h += `<p>Kdo sem stoupne, táhne kartu z balíčku „${esc(b.name)}“.</p>`;
   } else if (b.type === 'start') {
@@ -1487,10 +1489,12 @@ function rulesModal() {
       .slice(1)
       .map((x) => E.fmtN(x))
       .join(' / ')} Kč.`],
-    ['Služby', `Veterinář a Kovář: hod × ${RULES.serviceMult[1]}, majitel obou bere hod × ${RULES.serviceMult[2]}.`],
-    ['Karty', 'Finance a Náhoda. Propustku rušící distanc si můžeš nechat na později.'],
+    ['Služby', `${esc(SERVICE_NAMES)}: hod × ${RULES.serviceMult[1]}, majitel obou bere hod × ${RULES.serviceMult[2]}.`],
+    ['Karty', `${Object.values(DECKS)
+      .map((d) => esc(d.name))
+      .join(' a ')}. Propustku rušící distanc si můžeš nechat na později.`],
     ['Distanc', 'Končí <b>šestkou</b> (pak házíš znovu a táhneš) nebo použitím propustky.'],
-    ['Kůň kulhá', 'Příští tah vynecháš. Do té doby bereš za koně jen základní poplatek.'],
+    [esc(SKIP_NAME), 'Příští tah vynecháš. Do té doby bereš za koně jen základní poplatek.'],
     ['Peníze', `Na začátku ${E.fmt(st.startMoney)}, za průchod Startem ${E.fmt(
       st.startBonus
     )}. Bance prodáš majetek za plnou cenu, tréninky za polovinu. Když nemáš na placení, musíš prodávat – jinak bankrot.`],

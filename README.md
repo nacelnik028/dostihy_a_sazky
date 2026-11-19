@@ -56,6 +56,9 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
 - Jeden hráč hru **založí** (stane se hostitelem) a pošle ostatním **odkaz** nebo **5místný kód**.
 - Hostitel v lobby nastaví startovní kapitál, odměnu za Start a délku hry a hru spustí.
 - Pořadí hráčů se při startu náhodně zamíchá.
+- Hra má **zvuky** (kostky, kopyta, peníze, karty, fanfáry). Vypínají se tlačítkem s reproduktorem nebo klávesou **M**.
+- Na počítači **mezerník** hodí kostkou nebo ukončí tah. Kostkou jde hodit i klepnutím na kostku uprostřed plánu.
+- Pravidla jsou kdykoli k dispozici pod tlačítkem s knížkou („Jak se hraje“).
 
 ### Pravidla
 
@@ -108,5 +111,7 @@ vlastní server, například Firebase Cloud Functions. Ty ale vyžadují tarif B
 | `js/engine.js` | herní logika (pravidla), bez závislosti na prohlížeči |
 | `js/net.js` | síť: Firebase + lokální testovací režim |
 | `js/app.js` | uživatelské rozhraní a zpracování tahů hostitelem |
+| `js/sound.js` | zvuky – syntetizované v prohlížeči (Web Audio), žádné zvukové soubory |
+| `js/fx.js` | efekty – plovoucí částky, konfety na konci hry |
 | `js/firebase-config.js` | tvoje Firebase konfigurace |
 | `database.rules.json` | pravidla databáze (vložit do Firebase konzole) |
