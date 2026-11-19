@@ -965,7 +965,7 @@ function drawMe() {
   const myTurn = s.phase === 'playing' && cp.id === A.me && !me.bankrupt;
   const tags = [];
   if (me.jail && s.phase === 'playing') tags.push('<span class="tag red">Distanc</span>');
-  if (me.skip > 0 && s.phase === 'playing') tags.push('<span class="tag">Kůň kulhá</span>');
+  if (me.skip > 0 && s.phase === 'playing') tags.push(`<span class="tag">${esc(SKIP_NAME)}</span>`);
   if (me.passes.length) tags.push(`<span class="tag gold">Propustka ×${me.passes.length}</span>`);
   const head = `<div class="me-head"><span class="tok xl" style="--pc:${me.color}">${horse()}</span><div class="me-info"><div class="me-name">${esc(me.name)}${
     myTurn ? '<span class="turn-pill">na tahu</span>' : ''
@@ -1029,7 +1029,7 @@ function drawMe() {
     acts = `<p class="status"><span class="tok xs" style="--pc:${cp.color}">${horse()}</span><span>Na tahu je ${nameHtml(cp)}.</span></p>${tools()}`;
   }
   const skipNote =
-    me.skip > 0 && s.phase === 'playing' ? '<div class="note small">Kůň kulhá – příští tah vynecháš. Do té doby dostáváš za koně jen základní poplatek.</div>' : '';
+    me.skip > 0 && s.phase === 'playing' ? `<div class="note small">${esc(SKIP_NAME)} – příští tah vynecháš. Do té doby dostáváš za koně jen základní poplatek.</div>` : '';
   el.className = `panel me-panel ${state}`;
   el.style.setProperty('--pc', me.color);
   el.innerHTML = head + hostNote + skipNote + `<div class="actions">${acts}</div>`;

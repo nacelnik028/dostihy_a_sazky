@@ -1552,7 +1552,15 @@ body.animating .dice.can-roll {
   box-shadow: inset 0 0 0 2px rgba(200, 64, 47, 0.95), inset 0 -3px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* poslední karta ve středu */
+/* poslední karta ve středu – obal přes celou šířku, karta uprostřed */
+#c-card {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+}
+#c-card:empty {
+  display: none;
+}
 .cardbox {
   position: relative;
   background: linear-gradient(180deg, #fffdf6, #fbf3dd);

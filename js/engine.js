@@ -260,7 +260,7 @@ function land(s, p, ctx, opts) {
   }
   if (b.type === 'skip') {
     p.skip = 1;
-    log(s, `${pn(p.id)}: kůň kulhá – příští tah se vynechává. Do té doby jen základní poplatky za koně.`);
+    log(s, `${pn(p.id)}: ${b.name} – příští tah se vynechává. Do té doby jen základní poplatky za koně.`);
   }
 }
 

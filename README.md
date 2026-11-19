@@ -73,7 +73,7 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
 | Služby | Veterinář a Kovář; poplatek hod × 80, majitel obou hod × 200 |
 | Karty | Finance a Náhoda (16 + 16), propustku rušící distanc si můžeš nechat |
 | Distanc | končí **šestkou** nebo použitím propustky; po osvobozující šestce házíš znovu a táhneš podle nového hodu |
-| Kůň kulhá | (roh naproti Distancu) příští tah vynecháš; do té doby bereš za koně jen základní poplatek, ne za tréninky |
+| Podezření z dopingu | (roh naproti Distancu) příští tah vynecháš; do té doby bereš za koně jen základní poplatek, ne za tréninky |
 | Prodej bance | koně, žokeje a služby za **plnou cenu**, tréninky za **polovinu**; stáj s tréninky nejde rozdělit |
 | Obchod | na svém tahu můžeš nabídnout výměnu majetku, peněz a propustek za dohodnutou cenu |
 | Dluh | když nemáš na placení, musíš prodat tréninky nebo majetek bance; jinak bankrot |
