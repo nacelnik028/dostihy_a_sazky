@@ -41,12 +41,21 @@ body {
 
 body {
   background-color: var(--turf-800);
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+/* pozadí stojí na místě jako samostatná vrstva – na rozdíl od background-attachment: fixed
+   se při posouvání stránky nemusí znovu vykreslovat */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image: radial-gradient(120% 70% at 50% -10%, rgba(255, 255, 255, 0.12), transparent 60%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.028) 0 70px, rgba(0, 0, 0, 0.035) 70px 140px),
     linear-gradient(180deg, var(--turf-700), var(--turf-900) 70%, var(--turf-950));
-  background-attachment: fixed;
-  -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
+  will-change: transform;
 }
 
 h1,
@@ -227,7 +236,6 @@ select {
   color: #fff;
   box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(4px);
 }
 .btn.big {
   display: flex;
@@ -620,7 +628,6 @@ body.animating .dice.can-roll {
   padding: 8px 14px;
   text-align: center;
   min-width: 112px;
-  backdrop-filter: blur(4px);
 }
 .features b {
   display: block;
@@ -1770,7 +1777,6 @@ body.animating .dice.can-roll {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   color: #eaf3e6;
-  backdrop-filter: blur(6px);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
 }
 .room-chip {
@@ -2309,11 +2315,12 @@ body.animating .dice.can-roll {
 /* ============================================================
    Dialogy
    ============================================================ */
+/* Bez backdrop-filter: rozmazávání celé obrazovky za oknem se muselo přepočítávat
+   při každém snímku animací pod ním a na slabších počítačích to sráželo plynulost. */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(6, 18, 10, 0.62);
-  backdrop-filter: blur(3px);
+  background: rgba(6, 18, 10, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2328,6 +2335,12 @@ body.animating .dice.can-roll {
 }
 .overlay.top {
   z-index: 60;
+}
+/* když je otevřené okno, animace pod ním (záře, pulzování, kostka, figurka) se pozastaví */
+body:has(.overlay) #app *,
+body:has(.overlay) #app *::before,
+body:has(.overlay) #app *::after {
+  animation-play-state: paused !important;
 }
 @keyframes fade {
   from {
@@ -2348,6 +2361,7 @@ body.animating .dice.can-roll {
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 22px;
   position: relative;
   box-shadow: 0 0 0 1px rgba(120, 90, 30, 0.12), 0 30px 80px rgba(0, 0, 0, 0.5);

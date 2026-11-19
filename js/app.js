@@ -1228,6 +1228,9 @@ function renderModal(force = false) {
   const fresh = key !== A.modalKey;
   A.autoShown = m.auto ? m.type : null;
   A.modalKey = key;
+  // obsah se nezměnil → DOM nepřepisovat, jinak by se přerušilo rozjeté posouvání v okně
+  if (!fresh && html === A.modalHtml && root.querySelector('.modal')) return;
+  A.modalHtml = html;
   const scroll = root.querySelector('.modal') ? root.querySelector('.modal').scrollTop : 0;
   root.innerHTML = `<div class="overlay ${fresh ? 'enter' : ''}" data-a="closeOverlay"><div class="modal m-${m.type}" role="dialog" aria-modal="true">${html}<button class="x" data-a="close" aria-label="Zavřít">✕</button></div></div>`;
   root.querySelector('.modal').scrollTop = fresh ? 0 : scroll;
