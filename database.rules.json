@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && $room.matches(/^[A-Z0-9]{5}$/) && newData.exists() && newData.child('hostUid').val() === auth.uid && (!data.exists() || (newData.child('created').val() === data.child('created').val() && !root.child('presence').child($room).child(data.child('hostUid').val()).exists() && root.child('rooms').child($room).child('members').child(auth.uid).exists()))",
+          ".validate": "newData.hasChildren(['hostUid', 'created']) && newData.child('created').isNumber()"
+        },
+        "members": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()"
+        },
+        "state": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()",
+          ".validate": "newData.hasChildren(['s', 'v']) && newData.child('s').isString() && newData.child('s').val().length < 300000 && newData.child('v').isNumber()"
+        },
+        "actions": {
+          ".read": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()",
+          "$aid": {
+            ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && (data.child('uid').val() === auth.uid || auth.uid === root.child('rooms').child($room).child('meta/hostUid').val())))",
+            ".validate": "newData.hasChildren(['uid', 'a', 't']) && newData.child('a').isString() && newData.child('a').val().length < 3000"
+          }
+        },
+        "replies": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$room": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    }
+  }
+}
