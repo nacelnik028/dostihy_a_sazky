@@ -62,15 +62,15 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
 | | |
 |---|---|
 | Peníze | na začátku 30 000, za každý dokončený okruh přes Start 4 000 (obojí nastavitelné v lobby) |
-| Kostka | jedna; padne-li **6**, háže se znovu a hody se sčítají; **dvě šestky po sobě** = karanténa |
+| Kostka | jedna; padne-li **6**, háže se znovu a hody se sčítají; **dvě šestky po sobě** = distanc |
 | Koně | 22 koní v 8 stájích; volného koně můžeš koupit, když na něj stoupneš |
 | Poplatek | kdo stoupne na cizího koně, platí majiteli; celá stáj bez tréninků = dvojnásobek |
 | Tréninky | koupíš je, jen když **zastavíš na koni z vlastní kompletní stáje**: 1–4 tréninky, pak **Velká cena** |
 | Žokejové | 4 pole; poplatek 1 000 / 2 000 / 3 000 / 4 000 podle počtu vlastněných |
 | Služby | Veterinář a Kovář; poplatek hod × 80, majitel obou hod × 200 |
-| Karty | Tiket a Štěstí (16 + 16), propustku z karantény si můžeš nechat |
-| Karanténa | ven jen **šestkou** nebo propustkou; po osvobozující šestce házíš znovu a táhneš podle nového hodu |
-| Kůň kulhá | (roh naproti Karanténě) příští tah vynecháš; do té doby bereš za koně jen základní poplatek, ne za tréninky |
+| Karty | Finance a Náhoda (16 + 16), propustku rušící distanc si můžeš nechat |
+| Distanc | končí **šestkou** nebo použitím propustky; po osvobozující šestce házíš znovu a táhneš podle nového hodu |
+| Kůň kulhá | (roh naproti Distancu) příští tah vynecháš; do té doby bereš za koně jen základní poplatek, ne za tréninky |
 | Prodej bance | koně, žokeje a služby za **plnou cenu**, tréninky za **polovinu**; stáj s tréninky nejde rozdělit |
 | Obchod | na svém tahu můžeš nabídnout výměnu majetku, peněz a propustek za dohodnutou cenu |
 | Dluh | když nemáš na placení, musíš prodat tréninky nebo majetek bance; jinak bankrot |

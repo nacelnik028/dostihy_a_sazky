@@ -671,7 +671,7 @@ function drawMe() {
     if (s.trade) {
       acts = `<p>Čekáš na odpověď na nabídku obchodu → ${nameHtml(E.getP(s, s.trade.to))}.</p><button class="btn secondary" data-a="cancelTrade">Zrušit nabídku</button>`;
     } else if (s.stage === 'roll' && me.jail) {
-      acts = `<div class="alert">🚧 Jsi v karanténě. Ven tě pustí jen šestka (pak házíš znovu) nebo propustka.</div>
+      acts = `<div class="alert">🚧 Máš distanc. Zruší ho šestka nebo propustka. Po šestce házíš znovu.</div>
         <button class="btn big" data-a="roll">🎲 Zkusit hodit šestku</button>
         ${me.passes.length ? '<div class="btn-row"><button class="btn secondary" data-a="jailPass">🎟️ Použít propustku</button></div>' : ''}${tools(true)}`;
     } else if (s.stage === 'roll') {
@@ -735,7 +735,7 @@ function drawPlayers() {
         }${p.id === s.hostId ? ' <span title="hostitel">👑</span>' : ''}</span><span class="online ${on ? 'on' : ''}" title="${on ? 'online' : 'offline'}"></span><span class="pmoney">${
           p.bankrupt ? 'bankrot' : E.fmt(p.money)
         }</span></div>
-          <div class="chips">${owned.map((i) => chipHtml(s, i)).join('')}${p.jail ? '<span class="tag">🚧 karanténa</span>' : ''}${
+          <div class="chips">${owned.map((i) => chipHtml(s, i)).join('')}${p.jail ? '<span class="tag">🚧 Distanc</span>' : ''}${
           p.skip > 0 ? '<span class="tag">🩹 vynechá tah</span>' : ''
         }${
           p.passes.length ? `<span class="tag">🎟️×${p.passes.length}</span>` : ''
@@ -872,11 +872,11 @@ function sqModal(i) {
       b.price
     )}</b></div>`;
   } else if (b.type === 'card') {
-    h += `<p>Kdo sem stoupne, táhne kartu ${esc(b.name)}.</p>`;
+    h += `<p>Kdo sem stoupne, táhne kartu z balíčku „${esc(b.name)}“.</p>`;
   } else if (b.type === 'start') {
     h += `<p>${esc(b.desc)}</p><div class="facts">Odměna: <b>${E.fmt(s.settings.startBonus)}</b></div>`;
   } else if (b.type === 'jail') {
-    h += `<p>${esc(b.desc)}</p><p class="muted small">Do karantény se jde i po dvou šestkách v jednom tahu.</p>`;
+    h += `<p>${esc(b.desc)}</p><p class="muted small">Distanc dostaneš i po dvou šestkách v jednom tahu.</p>`;
   } else {
     h += `<p>${esc(b.desc || '')}</p>${b.amount ? `<div class="facts">Částka: <b>${E.fmt(b.amount)}</b></div>` : ''}`;
   }
@@ -1006,7 +1006,7 @@ function playerModal(id) {
   const canKick = s.phase === 'playing' && !p.bankrupt && amPlayer && (id === A.me || s.hostId === A.me || !online);
   return `<h2>${nameHtml(p)}${id === s.hostId ? ' 👑' : ''}</h2>
     <div class="facts">${online ? '🟢 online' : '⚪ offline'} · hotovost <b>${E.fmt(p.money)}</b> · jmění <b>${E.fmt(E.netWorth(s, id))}</b></div>
-    ${p.jail ? '<p>🚧 V karanténě</p>' : ''}${p.passes.length ? `<p>🎟️ Propustek: ${p.passes.length}</p>` : ''}
+    ${p.jail ? '<p>🚧 Má distanc</p>' : ''}${p.passes.length ? `<p>🎟️ Propustek: ${p.passes.length}</p>` : ''}
     <div class="olist">${
       owned
         .map(

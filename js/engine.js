@@ -159,7 +159,7 @@ function shuffle(a, rng) {
 
 const rollDie = (ctx) => 1 + Math.floor(ctx.rng() * 6);
 
-// padne-li 6, hází se znovu a hody se sčítají; dvě šestky po sobě = karanténa
+// padne-li 6, hází se znovu a hody se sčítají; dvě šestky po sobě = distanc
 function rollSeq(ctx) {
   const dice = [];
   while (dice.length < 2) {
@@ -347,7 +347,7 @@ function moveByDice(s, p, dice, ctx) {
   ev(s, { k: 'dice', pid: p.id, v: dice });
   s.stage = 'done';
   if (dice.length === 2 && dice.every((d) => d === 6)) {
-    log(s, `${pn(p.id)} hází dvě šestky po sobě a jde do karantény!`);
+    log(s, `${pn(p.id)} hází dvě šestky po sobě a dostává distanc!`);
     sendToJail(s, p);
     return;
   }
@@ -356,19 +356,19 @@ function moveByDice(s, p, dice, ctx) {
   move(s, p, total, ctx, {});
 }
 
-// z karantény ven jen šestkou; po ní se hází znovu a táhne se podle nového hodu
+// při hodu šestky distanc končí a hráč táhne podle nového hodu
 function jailRoll(s, p, ctx) {
   const d = rollDie(ctx);
   s.dice = [d];
   ev(s, { k: 'dice', pid: p.id, v: [d] });
   if (d === 6) {
     p.jail = false;
-    log(s, `${pn(p.id)} hází šestku a opouští karanténu! Hází znovu.`);
+    log(s, `${pn(p.id)} hází šestku. Distanc končí a hráč hází znovu.`);
     moveByDice(s, p, rollSeq(ctx), ctx);
     return;
   }
   s.stage = 'done';
-  log(s, `${pn(p.id)} hází ${d} a zůstává v karanténě.`);
+  log(s, `${pn(p.id)} hází ${d}. Distanc pokračuje.`);
 }
 
 function nextTurn(s, ctx) {
@@ -646,7 +646,7 @@ const ACTIONS = {
     if (!p.passes.length) return 'Nemáš propustku.';
     p.passes.shift();
     p.jail = false;
-    log(s, `${pn(id)} používá propustku a opouští karanténu.`);
+    log(s, `${pn(id)} ruší distanc propustkou.`);
   },
 
   buy(s, id) {
