@@ -637,13 +637,13 @@ body.animating .actions .btn {
   justify-content: center;
   background: #fff;
   border-radius: calc(var(--u) * 0.07);
-  border: 2px solid #d9a521;
+  border: 2px solid #808080;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   transform: rotate(-8deg);
   margin-bottom: 3px;
 }
 .minicard.deck-stesti {
-  border-color: #2e9e4f;
+  border-color: #4fb3e8;
   transform: rotate(8deg);
 }
 
@@ -891,13 +891,13 @@ body.animating .actions .btn {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 3px solid #d9a521;
+  border: 3px solid #808080;
   box-shadow: 2px 2px 0 #efe3c2, 4px 4px 0 #d8c9a0, 6px 8px 12px rgba(0, 0, 0, 0.45);
   font-size: max(9px, calc(var(--u) * 0.15));
   transform: rotate(-5deg);
 }
 .deck-stesti .deck-face {
-  border-color: #2e9e4f;
+  border-color: #4fb3e8;
   transform: rotate(5deg);
 }
 .deck-face span {
@@ -957,11 +957,11 @@ body.animating .actions .btn {
   padding: 8px 14px 10px;
   max-width: 78%;
   font-size: max(11px, calc(var(--u) * 0.18));
-  border: 3px solid #d9a521;
+  border: 3px solid #808080;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 .cardbox.deck-stesti {
-  border-color: #2e9e4f;
+  border-color: #4fb3e8;
 }
 .cardbox .ch {
   font-weight: 800;
