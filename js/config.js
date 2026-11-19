@@ -45,7 +45,7 @@ export const SETTINGS_OPTIONS = {
 };
 
 // Barvy polí, které nepatří ke stájím (musí se lišit od barev stájí výše).
-export const JOCKEY_COLOR = '#8acc7a'; // žokejové – zelená mezi Lukavou a Parkovištěm
+export const JOCKEY_COLOR = '#bae5ab'; // žokejové – světle zelená (odstín Lukavy a Parkoviště)
 
 export const DECKS = {
   tiket: { name: 'Finance', color: '#2456c4' }, // modrá
