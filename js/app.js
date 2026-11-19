@@ -437,19 +437,22 @@ function sideOf(i) {
 
 function cellHtml(b, i) {
   const [r, c] = cellPos(i);
-  let bar = '';
-  let body;
+  let inner;
   if (b.type === 'horse') {
-    bar = `<div class="bar" style="background:${STABLES[b.stable].color}"></div>`;
-    body = `<div class="cname">${esc(b.name)}</div><div class="cprice">${E.fmtN(b.price)}</div>`;
+    const col = STABLES[b.stable].color;
+    inner = `<div class="band" style="--sc:${col}"><span class="lvl"></span></div>
+      <div class="cbody"><span class="cart" style="color:${col}">♞</span><div class="cname">${esc(b.name)}</div><div class="cprice">${E.fmtN(b.price)}</div></div>`;
   } else if (b.type === 'jockey' || b.type === 'service') {
-    body = `<div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div><div class="cprice">${E.fmtN(b.price)}</div>`;
+    inner = `<div class="cbody"><div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div><div class="cprice">${E.fmtN(b.price)}</div></div>`;
   } else if (b.type === 'tax') {
-    body = `<div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div><div class="cprice">${E.fmtN(b.amount)}</div>`;
+    inner = `<div class="cbody"><div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div><div class="cprice minus">−${E.fmtN(b.amount)}</div></div>`;
+  } else if (b.type === 'card') {
+    inner = `<div class="cbody"><div class="minicard deck-${b.deck}">${b.icon}</div><div class="cname">${esc(b.name)}</div></div>`;
   } else {
-    body = `<div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div>`;
+    const sub = b.type === 'start' ? '<div class="csub" id="start-bonus"></div>' : b.type === 'jail' ? '<div class="csub">i návštěva</div>' : '';
+    inner = `<div class="cbody"><div class="cicon">${b.icon}</div><div class="cname">${esc(b.name)}</div>${sub}</div>`;
   }
-  return `<div class="cell ${sideOf(i)} t-${b.type}" style="grid-row:${r};grid-column:${c}" data-a="sq" data-i="${i}">${bar}<div class="cbody">${body}</div><div class="tokens"></div></div>`;
+  return `<div class="cell ${sideOf(i)} t-${b.type}" style="grid-row:${r};grid-column:${c}" data-a="sq" data-i="${i}">${inner}<div class="tokens"></div></div>`;
 }
 
 function buildGame() {
@@ -480,22 +483,24 @@ function renderGame() {
 
 function drawCells() {
   const s = A.s;
+  const sb = $('#start-bonus');
+  if (sb) sb.textContent = '+' + E.fmtN(s.settings.startBonus);
   A.cells.forEach((el, i) => {
     el.classList.toggle('hl', s.phase === 'playing' && s.stage === 'buy' && s.buySq === i);
     if (!E.isOwnable(i)) return;
     const op = s.owner[i] && E.getP(s, s.owner[i]);
     el.classList.toggle('owned', !!op);
     el.style.setProperty('--own', op ? op.color : 'transparent');
-    el.classList.toggle('mort', !!s.mortgaged[i]);
-    const bar = el.querySelector('.bar');
-    if (bar) {
+    el.title = op ? `${BOARD[i].name} – majitel: ${op.name}` : BOARD[i].name;
+    const lvl = el.querySelector('.lvl');
+    if (lvl) {
       const lv = s.level[i];
-      bar.innerHTML = lv === 5 ? '<span class="vc">🏆</span>' : '<span class="pip"></span>'.repeat(lv);
+      lvl.innerHTML = lv === 5 ? '<span class="vc">🏆</span>' : '<i></i>'.repeat(lv);
     }
   });
 }
 
-function drawTokens() {
+function drawTokens(moving) {
   const s = A.s;
   if (!s || !A.cells.length) return;
   const by = {};
@@ -506,12 +511,14 @@ function drawTokens() {
   }
   const cur = s.phase === 'playing' ? E.curP(s).id : null;
   A.cells.forEach((el, i) => {
-    el.querySelector('.tokens').innerHTML = (by[i] || [])
+    const list = by[i] || [];
+    el.classList.toggle('here', !!cur && list.some((p) => p.id === cur));
+    el.querySelector('.tokens').innerHTML = list
       .map(
         (p) =>
-          `<span class="tok ${p.id === cur ? 'cur' : ''} ${p.jail ? 'jailed' : ''}" style="background:${p.color}" title="${esc(p.name)}">${esc(
-            initial(p.name)
-          )}</span>`
+          `<span class="tok ${p.id === cur ? 'cur' : ''} ${p.id === moving ? 'hop' : ''} ${p.jail ? 'jailed' : ''}" style="--pc:${p.color}" title="${esc(
+            p.name
+          )}">♞</span>`
       )
       .join('');
   });
@@ -537,21 +544,38 @@ function drawCenter() {
   let turn;
   if (s.phase === 'over') {
     const w = s.ranking && s.ranking[0] && E.getP(s, s.ranking[0].id);
-    turn = `<div class="turn">🏆 Vítěz: ${nameHtml(w)}</div>`;
+    turn = `<div class="turnbar win">🏆 Vítěz: ${nameHtml(w)}</div>`;
   } else {
     const cp = E.curP(s);
-    turn = `<div class="round">Kolo ${s.round}</div><div class="turn">Na tahu: ${nameHtml(cp)}${cp.id === A.me ? ' <span class="you">(ty)</span>' : ''}</div>`;
+    turn = `<div class="turnbar"><span class="round">Kolo ${s.round}</span><span class="sep"></span>Na tahu: ${nameHtml(cp)}${
+      cp.id === A.me ? ' <span class="you">(ty)</span>' : ''
+    }</div>`;
   }
   const dice = (s.dice && s.dice.length ? s.dice : [0]).map((v) => dieHtml(v)).join('');
+  const deck = (d) => {
+    const n = s.decks && s.decks[d] ? s.decks[d].length : CARDS[d].length;
+    return `<div class="deck deck-${d}" title="Balíček ${DECKS[d].name}"><div class="deck-face"><span>${DECKS[d].icon}</span><b>${DECKS[d].name}</b></div><small>${n} ${plural(
+      n,
+      'karta',
+      'karty',
+      'karet'
+    )}</small></div>`;
+  };
   let notes = '';
   if (s.trade) notes += `<div class="cnote">🤝 Obchod: ${nameHtml(E.getP(s, s.trade.from))} → ${nameHtml(E.getP(s, s.trade.to))}</div>`;
   if (s.debts.length) notes += '<div class="cnote">💸 Čeká se na splacení dluhu</div>';
-  c.innerHTML = `<div class="logo">🏇 ${GAME_NAME}</div>${turn}<div class="dice" id="c-dice">${dice}</div><div id="c-card">${cardHtml(
-    s.lastCard
-  )}</div>${notes}<div class="cmsg">${s.log
-    .slice(-3)
-    .map((l) => `<div>${logHtml(l.m)}</div>`)
-    .join('')}</div>`;
+  c.innerHTML = `<div class="track"></div><div class="cc">
+    <div class="logo">${GAME_NAME}</div>
+    ${turn}
+    <div class="table">${deck('tiket')}<div class="dice" id="c-dice">${dice}</div>${deck('stesti')}</div>
+    <div id="c-card">${cardHtml(s.lastCard)}</div>
+    ${notes}
+    <div class="cmsg">${s.log
+      .slice(-3)
+      .reverse()
+      .map((l) => `<div>${logHtml(l.m)}</div>`)
+      .join('')}</div>
+  </div>`;
 }
 
 // ---------- animace ----------
@@ -562,7 +586,7 @@ async function playEvents(st) {
     else if (e.k === 'walk') await animWalk(e.pid, e.from, e.steps);
     else if (e.k === 'jump') {
       A.disp[e.pid] = e.to;
-      drawTokens();
+      drawTokens(e.pid);
       await sleep(400);
     } else if (e.k === 'card') {
       const box = $('#c-card');
@@ -594,7 +618,7 @@ async function animWalk(pid, from, steps) {
   const dt = n > 12 ? 90 : 150;
   for (let k = 1; k <= n; k++) {
     A.disp[pid] = (from + dir * k + 40) % 40;
-    drawTokens();
+    drawTokens(pid);
     await sleep(dt);
   }
   await sleep(200);
@@ -613,7 +637,7 @@ function drawMe() {
   }
   const cp = E.curP(s);
   const myTurn = s.phase === 'playing' && cp.id === A.me && !me.bankrupt;
-  const head = `<div class="me-head"><span class="tok big" style="background:${me.color}">${esc(initial(me.name))}</span><div class="me-info"><div class="me-name">${esc(
+  const head = `<div class="me-head"><span class="tok big" style="--pc:${me.color}">${esc(initial(me.name))}</span><div class="me-info"><div class="me-name">${esc(
     me.name
   )}</div><div class="me-money">${E.fmt(me.money)}</div></div>${me.passes.length ? `<div class="tag">🎟️ Propustka ×${me.passes.length}</div>` : ''}</div>`;
   let acts = '';
