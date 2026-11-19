@@ -260,7 +260,7 @@ function land(s, p, ctx, opts) {
   }
   if (b.type === 'skip') {
     p.skip = 1;
-    log(s, `🩹 ${pn(p.id)}: kůň kulhá – příští tah se vynechává. Do té doby jen základní poplatky za koně.`);
+    log(s, `${pn(p.id)}: kůň kulhá – příští tah se vynechává. Do té doby jen základní poplatky za koně.`);
   }
 }
 
@@ -279,7 +279,7 @@ function drawCard(s, p, deck, ctx) {
   const c = CARDS[deck][id];
   s.lastCard = { deck, id, pid: p.id };
   ev(s, { k: 'card', deck, id, pid: p.id });
-  log(s, `${pn(p.id)} – ${DECKS[deck].icon} ${DECKS[deck].name}: „${cardText(c)}“`);
+  log(s, `${pn(p.id)} – ${DECKS[deck].name}: „${cardText(c)}“`);
   applyCard(s, p, c, deck, id, ctx);
 }
 
@@ -388,7 +388,7 @@ function nextTurn(s, ctx) {
     if (p.bankrupt) continue;
     if (p.skip > 0) {
       p.skip--;
-      log(s, `🩹 ${pn(p.id)} vynechává tah.`);
+      log(s, `${pn(p.id)} vynechává tah.`);
       continue;
     }
     break;
@@ -411,8 +411,8 @@ function endGame(s, why) {
   const dead = [...s.out].reverse().map((id) => ({ id, worth: 0 }));
   s.ranking = [...alive, ...dead];
   if (!alive.length) return;
-  if (why === 'limit') log(s, `⏱️ Konec hry! Vítězí ${pn(alive[0].id)} s jměním ${fmt(alive[0].worth)}.`);
-  else log(s, `🏆 Vítězem je ${pn(alive[0].id)}!`);
+  if (why === 'limit') log(s, `Konec hry! Vítězí ${pn(alive[0].id)} s jměním ${fmt(alive[0].worth)}.`);
+  else log(s, `Vítězem je ${pn(alive[0].id)}!`);
 }
 
 function goBankrupt(s, pid, creditor, ctx) {
@@ -443,7 +443,7 @@ function goBankrupt(s, pid, creditor, ctx) {
   s.debts = s.debts.filter((d) => d.d !== pid);
   for (const d of s.debts) if (d.c === pid) d.c = null;
   if (s.trade && (s.trade.from === pid || s.trade.to === pid)) s.trade = null;
-  log(s, c ? `💀 Bankrot: ${pn(pid)} končí, majetek přebírá ${pn(c.id)}.` : `💀 Bankrot: ${pn(pid)} končí, majetek se vrací bance.`);
+  log(s, c ? `Bankrot: ${pn(pid)} končí, majetek přebírá ${pn(c.id)}.` : `Bankrot: ${pn(pid)} končí, majetek se vrací bance.`);
   if (activeP(s).length <= 1) return endGame(s, 'last');
   if (curP(s).id === pid) nextTurn(s, ctx);
 }
@@ -615,7 +615,7 @@ const ACTIONS = {
       ranking: null,
       startedAt: ctx.now,
     });
-    log(s, `🏁 Hra začíná! Pořadí: ${s.players.map((p) => pn(p.id)).join(', ')}.`);
+    log(s, `Hra začíná! Pořadí: ${s.players.map((p) => pn(p.id)).join(', ')}.`);
     log(s, `Na tahu je ${pn(s.players[0].id)}.`);
   },
 
@@ -625,7 +625,7 @@ const ACTIONS = {
     if (!getP(s, s.hostId)) s.hostId = id;
     for (const p of s.players) Object.assign(p, { money: 0, pos: 0, jail: false, skip: 0, bankrupt: false, passes: [] });
     Object.assign(s, { phase: 'lobby', ranking: null, out: [], trade: null, debts: [], lastCard: null, dice: [] });
-    log(s, '🔁 Nová hra – čeká se na spuštění.');
+    log(s, 'Nová hra – čeká se na spuštění.');
   },
 
   // --- tah ---
@@ -688,7 +688,7 @@ const ACTIONS = {
     if (e) return e;
     getP(s, id).money -= trainingCost(i);
     s.level[i]++;
-    log(s, s.level[i] === 5 ? `🏆 ${pn(id)} pořádá Velkou cenu – ${BOARD[i].name}!` : `${pn(id)} kupuje trénink – ${BOARD[i].name} (${s.level[i]}).`);
+    log(s, s.level[i] === 5 ? `${pn(id)} pořádá Velkou cenu – ${BOARD[i].name}!` : `${pn(id)} kupuje trénink – ${BOARD[i].name} (${s.level[i]}).`);
   },
 
   sell(s, id, a) {
@@ -753,7 +753,7 @@ const ACTIONS = {
     const err = itemsError(s, id, give) || itemsError(s, to.id, want);
     if (err) return err;
     s.trade = { id: ++s.tradeSeq, from: id, to: to.id, give, want };
-    log(s, `🤝 ${pn(id)} nabízí obchod → ${pn(to.id)}.`);
+    log(s, `${pn(id)} nabízí obchod → ${pn(to.id)}.`);
   },
 
   cancelTrade(s, id) {
@@ -785,7 +785,7 @@ const ACTIONS = {
     B.passes.push(...fromA);
     A.passes.push(...fromB);
     s.trade = null;
-    log(s, `🤝 ${pn(A.id)} a ${pn(B.id)} uzavírají obchod.`);
+    log(s, `${pn(A.id)} a ${pn(B.id)} uzavírají obchod.`);
   },
 };
 

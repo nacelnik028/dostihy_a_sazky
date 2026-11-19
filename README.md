@@ -1,4 +1,4 @@
-# 🏇 Dostihová stáj
+# Dostihová stáj
 
 Online dostihová obchodní hra pro **2–6 hráčů**. Každý hraje na svém mobilu nebo počítači v prohlížeči.
 Stránka běží na **GitHub Pages**, hráče propojuje **Firebase Realtime Database** (zdarma).

@@ -44,56 +44,59 @@ export const SETTINGS_OPTIONS = {
   ],
 };
 
+// Barvy polí, které nepatří ke stájím (musí se lišit od barev stájí výše).
+export const JOCKEY_COLOR = '#2b313a'; // žokejové – antracit
+
 export const DECKS = {
-  tiket: { name: 'Finance', icon: '🎫' },
-  stesti: { name: 'Náhoda', icon: '🍀' },
+  tiket: { name: 'Finance', color: '#2456c4' }, // modrá
+  stesti: { name: 'Náhoda', color: '#c62828' }, // červená
 };
 
 // Kůň: [poplatek bez tréninku, 1 trénink, 2, 3, 4, Velká cena]
 const H = (name, stable, price, rent) => ({ type: 'horse', name, stable, price, rent });
-const CARD = (deck) => ({ type: 'card', deck, name: DECKS[deck].name, icon: DECKS[deck].icon });
+const CARD = (deck) => ({ type: 'card', deck, name: DECKS[deck].name });
 
 // 40 polí, pole 0 je Start, hraje se po směru (na plánu doleva od pravého dolního rohu).
 export const BOARD = [
-  { type: 'start', name: 'Start', icon: '🏁', desc: 'Za každý průchod Startem nebo zastavení na něm dostaneš odměnu.' },
+  { type: 'start', name: 'Start', desc: 'Za každý průchod Startem nebo zastavení na něm dostaneš odměnu.' },
   H('Fantome', 0, 1200, [60, 300, 900, 2700, 3800, 5000]),
   CARD('tiket'),
   H('Gavora', 0, 1400, [80, 400, 1100, 3200, 4500, 5800]),
-  { type: 'tax', name: 'Klinika', acc: 'startovné', amount: 2000, icon: '💰', desc: 'Zaplať bance startovné.' },
-  { type: 'jockey', name: 'Trenér 1', price: 4000, icon: '🏇' },
+  { type: 'tax', name: 'Klinika', acc: 'startovné', amount: 500, desc: 'Zaplať bance startovné.' },
+  { type: 'jockey', name: 'Trenér 1', price: 4000 },
   H('Lady Anne', 1, 2000, [120, 600, 1800, 5200, 7000, 9000]),
   CARD('stesti'),
   H('Pasek', 1, 2000, [120, 600, 1800, 5200, 7000, 9000]),
   H('Koran', 1, 2400, [150, 750, 2200, 6000, 8200, 10500]),
-  { type: 'jail', name: 'Distanc', icon: '🚧', desc: 'Kdo sem jen stoupne, je na návštěvě. Distanc zruší šestka nebo propustka. Po osvobozující šestce házíš znovu a táhneš podle nového hodu.' },
+  { type: 'jail', name: 'Distanc', desc: 'Kdo sem jen stoupne, je na návštěvě. Distanc zruší šestka nebo propustka. Po osvobozující šestce házíš znovu a táhneš podle nového hodu.' },
   H('Neklan', 2, 2800, [200, 1000, 3000, 8000, 10500, 13000]),
-  { type: 'service', name: 'Přeprava', price: 3000, icon: '🩺' },
+  { type: 'service', name: 'Přeprava', price: 3000 },
   H('Portlancl', 2, 2800, [200, 1000, 3000, 8000, 10500, 13000]),
   H('Japan', 2, 3200, [240, 1200, 3500, 9000, 12000, 15000]),
-  { type: 'jockey', name: 'Trenér 2', price: 4000, icon: '🏇' },
+  { type: 'jockey', name: 'Trenér 2', price: 4000 },
   H('Kostrava', 3, 3600, [280, 1400, 4000, 11000, 14000, 17000]),
   CARD('tiket'),
   H('Lukava', 3, 3600, [280, 1400, 4000, 11000, 14000, 17000]),
   H('Melák', 3, 4000, [320, 1600, 4500, 12000, 15500, 19000]),
-  { type: 'parking', name: 'Parkoviště', icon: '🌿', desc: 'Na parkovišti se nic neděje.' },
+  { type: 'parking', name: 'Parkoviště', desc: 'Na parkovišti se nic neděje.' },
   H('Grifel', 4, 4400, [360, 1800, 5000, 14000, 17500, 21000]),
   CARD('stesti'),
   H('Mohyla', 4, 4400, [360, 1800, 5000, 14000, 17500, 21000]),
   H('Metál', 4, 4800, [400, 2000, 6000, 15000, 18500, 22500]),
-  { type: 'jockey', name: 'Trenér 3', price: 4000, icon: '🏇' },
+  { type: 'jockey', name: 'Trenér 3', price: 4000 },
   H('Tara', 5, 5200, [440, 2200, 6600, 16000, 19500, 23500]),
   H('Furioso', 5, 5200, [440, 2200, 6600, 16000, 19500, 23500]),
-  { type: 'service', name: 'Stáje', price: 3000, icon: '⚒️' },
+  { type: 'service', name: 'Stáje', price: 3000 },
   H('Genius', 5, 5600, [480, 2400, 7200, 17000, 20500, 24500]),
-  { type: 'skip', name: 'Podezření z dopingu', icon: '🩹', desc: 'Kůň kulhá a potřebuje odpočinek – příští tah vynecháš (nikam se nepřesouváš). Než tah proběhne, dostáváš za své koně jen základní poplatek, ne poplatky za tréninky.' },
+  { type: 'skip', name: 'Podezření z dopingu', desc: 'Kůň kulhá a potřebuje odpočinek – příští tah vynecháš (nikam se nepřesouváš). Než tah proběhne, dostáváš za své koně jen základní poplatek, ne poplatky za tréninky.' },
   H('Shagga', 6, 6000, [520, 2600, 7800, 18500, 22500, 26500]),
   H('Dahoman', 6, 6000, [520, 2600, 7800, 18500, 22500, 26500]),
   CARD('tiket'),
   H('Gira', 6, 6400, [560, 3000, 9000, 20000, 24000, 28000]),
-  { type: 'jockey', name: 'Trenér 4', price: 4000, icon: '🏇' },
+  { type: 'jockey', name: 'Trenér 4', price: 4000 },
   CARD('stesti'),
   H('Narcius', 7, 7000, [700, 3500, 10000, 22000, 26000, 30000]),
-  { type: 'tax', name: 'Klinika', acc: 'pokutu komisařů', amount: 1000, icon: '⚖️', desc: 'Zaplať bance pokutu.' },
+  { type: 'tax', name: 'Klinika', acc: 'pokutu komisařů', amount: 1000, desc: 'Zaplať bance pokutu.' },
   H('Napoli', 7, 8000, [1000, 4000, 12000, 28000, 34000, 40000]),
 ];
 

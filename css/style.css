@@ -571,6 +571,7 @@ body.animating .actions .btn {
 .lvl .vc {
   font-size: calc(var(--u) * 0.26);
   line-height: 1;
+  color: #fff;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
@@ -616,11 +617,6 @@ body.animating .actions .btn {
 .cprice.minus {
   color: #b03a2e;
 }
-.cicon {
-  font-size: calc(var(--u) * 0.4);
-  line-height: 1.1;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-}
 .csub {
   font-size: 0.85em;
   font-weight: 700;
@@ -631,26 +627,43 @@ body.animating .actions .btn {
   height: calc(var(--u) * 0.6);
   min-width: 14px;
   min-height: 18px;
-  font-size: calc(var(--u) * 0.28);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
+  background: var(--dc) repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 5px);
   border-radius: calc(var(--u) * 0.07);
-  border: 2px solid #808080;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dc) 60%, black), 0 2px 4px rgba(0, 0, 0, 0.3);
   transform: rotate(-8deg);
   margin-bottom: 3px;
 }
 .minicard.deck-stesti {
-  border-color: #4fb3e8;
   transform: rotate(8deg);
 }
 
-/* rohová pole */
-.corner .cicon {
-  font-size: calc(var(--u) * 0.6);
+/* žokejové a karetní pole – vlastní barvy odlišné od stájí (nastavují se v config.js) */
+.deck-tiket {
+  --dc: var(--c-tiket, #2456c4);
 }
+.deck-stesti {
+  --dc: var(--c-stesti, #c62828);
+}
+.cell.t-card {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--dc) 20%, #fffaf0) 0%, color-mix(in srgb, var(--dc) 38%, #f3e8cc) 100%);
+}
+.t-card .cname {
+  color: color-mix(in srgb, var(--dc) 70%, black);
+}
+.cell.t-jockey,
+.cell.t-jockey.owned {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c-jockey, #2b313a) 80%, white) 0%, var(--c-jockey, #2b313a) 100%);
+}
+.t-jockey .cbody {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.t-jockey .cprice {
+  color: #e9dcbc;
+}
+
+/* rohová pole */
 .corner .cname {
   font-size: max(9px, calc(var(--u) * 0.24));
   letter-spacing: 0.06em;
@@ -884,25 +897,21 @@ body.animating .actions .btn {
   min-width: 32px;
   min-height: 42px;
   border-radius: 8px;
-  background: #fffaf0;
-  color: #2b2216;
+  background: var(--dc) repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.14) 0 3px, transparent 3px 8px);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 3px solid #808080;
+  border: 3px solid #fffaf0;
   box-shadow: 2px 2px 0 #efe3c2, 4px 4px 0 #d8c9a0, 6px 8px 12px rgba(0, 0, 0, 0.45);
   font-size: max(9px, calc(var(--u) * 0.15));
   transform: rotate(-5deg);
 }
 .deck-stesti .deck-face {
-  border-color: #4fb3e8;
   transform: rotate(5deg);
-}
-.deck-face span {
-  font-size: calc(var(--u) * 0.4);
-  line-height: 1;
 }
 .deck-face b {
   text-transform: uppercase;
@@ -957,18 +966,15 @@ body.animating .actions .btn {
   padding: 8px 14px 10px;
   max-width: 78%;
   font-size: max(11px, calc(var(--u) * 0.18));
-  border: 3px solid #808080;
+  border: 3px solid var(--dc);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
-}
-.cardbox.deck-stesti {
-  border-color: #4fb3e8;
 }
 .cardbox .ch {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.8em;
-  color: var(--muted);
+  color: var(--dc);
 }
 .cardbox .ct {
   margin: 4px 0;
