@@ -85,7 +85,7 @@ export const BOARD = [
   H('Furioso', 5, 5200, [440, 2200, 6600, 16000, 19500, 23500]),
   { type: 'service', name: 'Stáje', price: 3000, icon: '⚒️' },
   H('Genius', 5, 5600, [480, 2400, 7200, 17000, 20500, 24500]),
-  { type: 'skip', name: 'Kůň kulhá', icon: '🩹', desc: 'Kůň kulhá a potřebuje odpočinek – příští tah vynecháš (nikam se nepřesouváš). Než tah proběhne, dostáváš za své koně jen základní poplatek, ne poplatky za tréninky.' },
+  { type: 'skip', name: 'Podezření z dopingu', icon: '🩹', desc: 'Kůň kulhá a potřebuje odpočinek – příští tah vynecháš (nikam se nepřesouváš). Než tah proběhne, dostáváš za své koně jen základní poplatek, ne poplatky za tréninky.' },
   H('Shagga', 6, 6000, [520, 2600, 7800, 18500, 22500, 26500]),
   H('Dahoman', 6, 6000, [520, 2600, 7800, 18500, 22500, 26500]),
   CARD('tiket'),
