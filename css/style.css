@@ -1184,14 +1184,13 @@ body.animating .dice.can-roll {
 }
 .cell.t-jockey,
 .cell.t-jockey.owned {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--c-jockey, #2b313a) 80%, white) 0%, var(--c-jockey, #2b313a) 100%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c-jockey, #8acc7a) 80%, white) 0%, var(--c-jockey, #8acc7a) 100%);
 }
 .t-jockey .cbody {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: color-mix(in srgb, var(--c-jockey, #8acc7a) 25%, #10240c);
 }
 .t-jockey .cprice {
-  color: #e9dcbc;
+  color: color-mix(in srgb, var(--c-jockey, #8acc7a) 35%, #1d3a17);
 }
 
 /* rohová pole */
@@ -2229,7 +2228,7 @@ body.animating .dice.can-roll {
   background: color-mix(in srgb, var(--sc) 22%, white);
 }
 .sg.misc {
-  --sc: var(--c-jockey, #2b313a);
+  --sc: var(--c-jockey, #8acc7a);
   background: rgba(0, 0, 0, 0.05);
 }
 
