@@ -26,7 +26,8 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
    [`database.rules.json`](database.rules.json) a klikni na **Publish**.
 6. Ozubené kolo → **Project settings** → *Your apps* → ikona **`</>`** (Web) → zaregistruj aplikaci
    (Firebase Hosting nezaškrtávej). Zobrazí se `firebaseConfig`.
-7. Zkopíruj ho do souboru [`js/firebase-config.js`](js/firebase-config.js) místo `null`, například:
+7. Zkopíruj soubor [`js/firebase-config.example.js`](js/firebase-config.example.js) jako `js/firebase-config.js`
+   a místo `null` do něj vlož svůj `firebaseConfig`, například:
 
    ```js
    export const firebaseConfig = {
@@ -40,20 +41,53 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
 
    Pokud v konfiguraci chybí `databaseURL`, zkopíruj adresu z horní části stránky Realtime Database.
 
-> Údaje ve `firebase-config.js` nejsou tajné. Klidně můžou být veřejně na GitHubu.
-> Bezpečnost zajišťují pravidla databáze a anonymní přihlášení.
+> Soubor `js/firebase-config.js` je v `.gitignore`, takže se **na GitHub nikdy nenahraje**.
+> Máš ho jen na svém počítači. Na GitHub Pages ho při každém nasazení vytvoří GitHub Actions
+> z tajemství `FIREBASE_CONFIG` (viz níže).
 
 ## Zveřejnění na GitHub Pages
 
-1. Nahraj soubory do repozitáře (commit + push na větev `main`).
-2. Na GitHubu otevři **Settings → Pages** → *Source: Deploy from a branch* → větev `main`, složka `/ (root)` → *Save*.
-3. Za minutu až dvě bude hra na adrese `https://TVOJE-JMENO.github.io/NAZEV-REPOZITARE/`.
+Web nasazuje GitHub Actions ([`.github/workflows/pages.yml`](.github/workflows/pages.yml)) po každém pushi na `main`.
+
+1. Na GitHubu otevři **Settings → Secrets and variables → Actions → New repository secret**.
+   Název `FIREBASE_CONFIG`, hodnota je tvoje konfigurace jako **JSON** (klíče v uvozovkách):
+
+   ```json
+   {"apiKey":"AIza...","authDomain":"moje-dostihy.firebaseapp.com","databaseURL":"https://moje-dostihy-default-rtdb.europe-west1.firebasedatabase.app","projectId":"moje-dostihy","appId":"1:1234567890:web:abcdef"}
+   ```
+
+   Nebo z příkazové řádky (z `js/firebase-config.js` udělá JSON a uloží ho jako tajemství):
+
+   ```powershell
+   node --input-type=module -e "import('./js/firebase-config.js').then(m => process.stdout.write(JSON.stringify(m.firebaseConfig)))" | gh secret set FIREBASE_CONFIG
+   ```
+
+2. **Settings → Pages** → *Source:* **GitHub Actions**.
+3. Pushni na `main`. Za minutu až dvě bude hra na adrese `https://TVOJE-JMENO.github.io/NAZEV-REPOZITARE/`.
+   Průběh je vidět na záložce **Actions**.
+
+### Proč je klíč na webu i tak vidět a jak ho omezit
+
+Hra běží celá v prohlížeči, takže prohlížeč musí Firebase konfiguraci dostat. Kdo otevře hru
+a podívá se do vývojářských nástrojů, klíč uvidí. To platí pro každou webovou aplikaci s Firebase.
+Proto klíč není v repozitáři, ale skutečnou ochranu dávají tyto věci:
+
+- **Pravidla databáze** ([`database.rules.json`](database.rules.json)): bez nich by klíč k ničemu nebyl.
+- **Omezení klíče na tvoji doménu:** <https://console.cloud.google.com/apis/credentials> → vyber projekt →
+  klíč *Browser key (auto created by Firebase)* → *Application restrictions:* **Websites** a přidej
+  `https://TVOJE-JMENO.github.io/*`, `http://localhost:8080/*` a `https://PROJEKT.firebaseapp.com/*` → *Save*.
+  Z jiných webů pak klíč nefunguje.
+- **Authorized domains** ve Firebase Authentication (krok 3 výše): jen tyto domény smí přihlašovat hráče.
 
 ---
 
 ## Jak se hraje
 
 - Jeden hráč hru **založí** (stane se hostitelem) a pošle ostatním **odkaz** nebo **5místný kód**.
+- Kód hry je **schovaný** (vidíš jen tečky), aby ho nepřečetl nikdo, kdo se dívá na tvoji obrazovku.
+  Kliknutím na kód se zkopíruje, tlačítko s okem ho ukáže nebo zase schová.
+- Hostitel může hráče **vyhodit** (křížek u jména v lobby i ve hře, nebo v detailu hráče).
+  Vyhozený hráč se do té hry už nevrátí, ani do odvety. Během hry se jeho majetek vrátí bance.
 - Hostitel v lobby nastaví startovní kapitál, odměnu za Start a délku hry a hru spustí.
 - Pořadí hráčů se při startu náhodně zamíchá.
 - Hra má **zvuky** (kostky, kopyta, peníze, karty, fanfáry). Vypínají se tlačítkem s reproduktorem nebo klávesou **M**.
@@ -94,7 +128,9 @@ Jména, ceny, poplatky i texty karet se mění v souboru [`js/config.js`](js/con
 - Pořadí karet se nikde neukládá, karta se losuje až při tažení, takže nejde dopředu vykoukat.
 - Když hostitel vypadne (zavře prohlížeč, zhasne mobil), roli **automaticky převezme** jiný online hráč.
   Pravidla to dovolí jen tehdy, když je původní hostitel opravdu offline.
-- Offline hráče může kdokoli vyřadit, online hráče jen hostitel.
+- Offline hráče může kdokoli vyřadit, online hráče jen hostitel. Koho vyhodí hostitel, ten je
+  na seznamu vyhozených: hostitelův engine odmítne jeho připojení i všechny akce a nemůže převzít roli hostitele.
+- Firebase konfigurace (API klíč) není v repozitáři, viz [Zveřejnění na GitHub Pages](#zveřejnění-na-github-pages).
 
 **Co ochráněné není:** hostitel by teoreticky mohl podvádět přes vývojářské nástroje prohlížeče,
 protože jeho prohlížeč počítá hru. Pro hru s kamarády to obvykle nevadí. Úplnou ochranu by dal jen
@@ -113,5 +149,7 @@ vlastní server, například Firebase Cloud Functions. Ty ale vyžadují tarif B
 | `js/app.js` | uživatelské rozhraní a zpracování tahů hostitelem |
 | `js/sound.js` | zvuky – syntetizované v prohlížeči (Web Audio), žádné zvukové soubory |
 | `js/fx.js` | efekty – plovoucí částky, konfety na konci hry |
-| `js/firebase-config.js` | tvoje Firebase konfigurace |
+| `js/firebase-config.example.js` | vzor Firebase konfigurace |
+| `js/firebase-config.js` | tvoje Firebase konfigurace (jen u tebe, v gitu není) |
+| `.github/workflows/pages.yml` | nasazení na GitHub Pages, konfiguraci doplní z tajemství `FIREBASE_CONFIG` |
 | `database.rules.json` | pravidla databáze (vložit do Firebase konzole) |

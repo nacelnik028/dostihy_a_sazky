@@ -16,6 +16,13 @@ const FB = '10.12.2';
 export const DUP = '__dup__';
 const REPLY_TIMEOUT = 15000;
 
+// Seznam členů místnosti pro pravidla databáze (jen členové smí převzít roli hostitele).
+// Vyhození hráči v něm nejsou, i když ve stavu hry zůstávají jako vyřazení.
+function membersOf(s) {
+  const banned = new Set(s.banned || []);
+  return Object.fromEntries(s.players.filter((p) => !banned.has(p.id)).map((p) => [p.id, true]));
+}
+
 export async function makeBackend({ local, config }) {
   if (local) return localBackend();
   if (!config || !config.apiKey || !config.databaseURL) throw new Error('NOCONFIG');
@@ -159,7 +166,7 @@ async function firebaseBackend(config) {
         [`actions/${id}`]: null,
         [`replies/${actor}`]: { id, err: err || null, t: Date.now() },
       };
-      if (newState) upd.members = Object.fromEntries(newState.players.map((p) => [p.id, true]));
+      if (newState) upd.members = membersOf(newState);
       await update(R(code), upd);
     },
 
@@ -333,7 +340,7 @@ function localBackend() {
         }
       } else err = 'Hra neexistuje.';
       wr(K(c, 'act:' + id), null);
-      if (newState) wr(K(c, 'members'), Object.fromEntries(newState.players.map((p) => [p.id, true])));
+      if (newState) wr(K(c, 'members'), membersOf(newState));
       wr(K(c, 'rep:' + actor), { id, err, t: Date.now() });
     },
 

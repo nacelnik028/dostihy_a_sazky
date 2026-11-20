@@ -710,17 +710,40 @@ body.animating .dice.can-roll {
   font-weight: 700;
   margin-bottom: 8px;
 }
+.code-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.code-box .code-eye {
+  width: 44px;
+  height: 44px;
+}
+.code-hint {
+  display: block;
+  margin-top: 9px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
 .code-tiles {
   display: flex;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  border: 0;
+  background: none;
+  padding: 2px;
+  font: inherit;
+  color: inherit;
+  border-radius: 14px;
 }
 .code-tiles b {
   width: 52px;
   height: 62px;
   display: grid;
   place-items: center;
+  perspective: 300px;
   font: 800 34px var(--cond);
   background: linear-gradient(180deg, #fff, #f4ebd4);
   border: 1px solid var(--line-2);
@@ -737,6 +760,41 @@ body.animating .dice.can-roll {
 }
 .code-tiles:hover b {
   transform: translateY(-2px);
+}
+/* schovaná strana (tečka) a skutečný znak se při odkrytí přetočí */
+.code-tiles i {
+  grid-area: 1 / 1;
+  font-style: normal;
+  line-height: 1;
+  transition: transform 0.38s cubic-bezier(0.3, 0.9, 0.3, 1.25), opacity 0.2s;
+}
+.code-tiles .cf {
+  font-size: 1.3em;
+  color: var(--gold-dk);
+}
+.code-tiles .cb {
+  transform: rotateX(90deg);
+  opacity: 0;
+}
+.code-tiles.shown .cf {
+  transform: rotateX(-90deg);
+  opacity: 0;
+}
+.code-tiles.shown .cb {
+  transform: none;
+  opacity: 1;
+}
+.code-tiles b:nth-child(2) i {
+  transition-delay: 0.04s;
+}
+.code-tiles b:nth-child(3) i {
+  transition-delay: 0.08s;
+}
+.code-tiles b:nth-child(4) i {
+  transition-delay: 0.12s;
+}
+.code-tiles b:nth-child(5) i {
+  transition-delay: 0.16s;
 }
 .share-row .btn {
   flex: 0 1 auto;
@@ -1781,22 +1839,51 @@ body.animating .dice.can-roll {
 .room-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  flex: none;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #fff;
   border-radius: 11px;
-  padding: 0 11px;
   height: 38px;
+  overflow: hidden;
+}
+.room-chip .rc-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 4px 0 10px;
+  border: 0;
+  background: none;
+  color: inherit;
   font: inherit;
   cursor: pointer;
 }
-.room-chip:hover {
-  background: rgba(255, 255, 255, 0.18);
+.room-chip .rc-copy:hover,
+.room-chip .rc-eye:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.room-chip .rc-eye {
+  width: 30px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.room-chip .rc-eye .ic {
+  width: 18px;
+  height: 18px;
 }
 .room-chip b {
   letter-spacing: 0.16em;
   font: 800 17px var(--cond);
+  min-width: 3.5em; /* tečky i kód zaberou stejné místo */
+}
+.kick-mini {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+  margin-left: 2px;
 }
 .room-chip small {
   font-size: 10.5px;

@@ -4,7 +4,6 @@
 import { BOARD, STABLES, RULES, CARDS, DECKS, JOCKEY_COLOR, PLAYER_COLORS, GAME_NAME, SETTINGS_OPTIONS } from './config.js';
 import * as E from './engine.js';
 import { makeBackend, DUP } from './net.js';
-import { firebaseConfig } from './firebase-config.js';
 import { sound, unlock, play as sfx } from './sound.js';
 import { floatAt, confetti, reducedMotion } from './fx.js';
 
@@ -75,6 +74,7 @@ const A = {
   hideTrade: 0,
   hideOver: false,
   joinColor: null,
+  showCode: false, // kód hry je schovaný, dokud ho hráč neodkryje
   hostOff: null,
   queue: [],
   draining: false,
@@ -92,7 +92,7 @@ async function boot() {
   for (const ev of ['pointerdown', 'keydown', 'touchend']) document.addEventListener(ev, unlock, { passive: true });
   app.innerHTML = screen('<div class="loader">' + emblem('spin') + '<p>Načítám…</p></div>');
   try {
-    A.backend = await makeBackend({ local: LOCAL, config: firebaseConfig });
+    A.backend = await makeBackend({ local: LOCAL, config: LOCAL ? null : await loadFirebaseConfig() });
     A.me = A.backend.uid;
   } catch (e) {
     if (!(e && e.message === 'NOCONFIG')) console.error(e);
@@ -103,6 +103,17 @@ async function boot() {
   else showHome(code);
   setInterval(checkTakeover, 3000);
   setInterval(tickClock, 1000);
+}
+
+// js/firebase-config.js není v gitu: lokálně ho máš vytvořený ty, na GitHub Pages ho
+// vygeneruje GitHub Actions z tajemství FIREBASE_CONFIG. Když chybí, hra nespadne,
+// jen ukáže návod.
+async function loadFirebaseConfig() {
+  try {
+    return (await import('./firebase-config.js')).firebaseConfig || null;
+  } catch {
+    return null;
+  }
 }
 
 const cleanCode = (c) =>
@@ -140,7 +151,7 @@ function showHome(prefill = '', msg = '') {
   if (A.backendErr === 'noconfig') {
     const u = new URL(location.href);
     u.search = '?local=1';
-    body = `<div class="note warn"><b>Hra zatím není propojená s Firebase.</b><br>Vyplň soubor <code>js/firebase-config.js</code> podle návodu v README.md.<br><br>Mezitím si můžeš hru vyzkoušet v <a href="${esc(
+    body = `<div class="note warn"><b>Hra zatím není propojená s Firebase.</b><br>Zkopíruj <code>js/firebase-config.example.js</code> jako <code>js/firebase-config.js</code> a vyplň ho podle návodu v README.md.<br><br>Mezitím si můžeš hru vyzkoušet v <a href="${esc(
       u.toString()
     )}">lokálním testovacím režimu</a>.</div>`;
   } else if (A.backendErr) {
@@ -216,7 +227,7 @@ function enterRoom(code) {
   });
   resetMoney();
   history.replaceState(null, '', urlFor(code));
-  app.innerHTML = screen(`<div class="loader">${emblem('spin')}<p>Připojuji se ke hře <b>${esc(code)}</b>…</p></div>`);
+  app.innerHTML = screen(`<div class="loader">${emblem('spin')}<p>Připojuji se ke hře…</p></div>`);
   A.unwatch = A.backend.watchRoom(code, {
     onState: (s) => onState(s),
     onMeta: (m) => {
@@ -242,6 +253,10 @@ function leaveRoom() {
 
 async function onState(s) {
   if (!s || !A.room) return;
+  if (E.isBanned(s, A.me)) {
+    sfx('error');
+    return showHome('', 'Hostitel tě z této hry vyhodil.');
+  }
   A.s = s;
   if (A.seq === null) {
     A.seq = s.evSeq;
@@ -332,13 +347,13 @@ function checkTakeover() {
     A.hostGoneSince = null;
     return;
   }
-  if (!E.getP(s, A.me)) return;
+  if (!E.getP(s, A.me) || E.isBanned(s, A.me)) return;
   if (!A.hostGoneSince) {
     A.hostGoneSince = Date.now();
     return;
   }
   if (Date.now() - A.hostGoneSince < 10000 || A.claiming) return;
-  const first = s.players.find((p) => A.pres[p.id]);
+  const first = s.players.find((p) => A.pres[p.id] && !E.isBanned(s, p.id));
   if (!first || first.id !== A.me) return;
   A.claiming = true;
   A.backend.claimHost(A.room, m.created).then((ok) => {
@@ -399,7 +414,7 @@ function updateTitle() {
     if (s.trade && s.trade.to === A.me) t = 'Nabídka obchodu · ' + GAME_NAME;
     else if (s.debts.some((d) => d.d === A.me)) t = 'Musíš splatit dluh · ' + GAME_NAME;
     else if (E.curP(s).id === A.me) t = 'Jsi na tahu! · ' + GAME_NAME;
-  } else if (s && A.room && s.phase === 'lobby') t = `Hra ${A.room} · ${GAME_NAME}`;
+  } else if (s && A.room && s.phase === 'lobby') t = `Příprava hry · ${GAME_NAME}`;
   if (document.title !== t) document.title = t;
 }
 
@@ -559,6 +574,37 @@ function turnBanner(s) {
   setTimeout(() => b.remove(), 1900);
 }
 
+// ---------- kód hry: normálně schovaný, kliknutím se zkopíruje ----------
+const MASK = '•';
+const codeText = () => (A.showCode ? A.room : MASK.repeat(A.room.length));
+
+// dlaždice se při odkrytí otočí; schovaná strana ukazuje jen tečku
+function codeTilesHtml() {
+  return `<button class="code-tiles ${A.showCode ? 'shown' : ''}" data-a="copyCode" title="Kopírovat kód hry" aria-label="Kopírovat kód hry">${[...A.room]
+    .map((c) => `<b><i class="cf" aria-hidden="true">${MASK}</i><i class="cb">${esc(c)}</i></b>`)
+    .join('')}</button>`;
+}
+
+const eyeLabel = () => (A.showCode ? 'Schovat kód' : 'Ukázat kód');
+const eyeBtn = (cls = '') =>
+  `<button class="icon-btn eye-btn ${cls}" data-a="toggleCode" title="${eyeLabel()}" aria-label="${eyeLabel()}" aria-pressed="${A.showCode}">${icon(
+    A.showCode ? 'eye-off' : 'eye'
+  )}</button>`;
+
+function refreshCode() {
+  document.querySelectorAll('.code-tiles').forEach((el) => el.classList.toggle('shown', A.showCode));
+  document.querySelectorAll('.code-text').forEach((el) => (el.textContent = codeText()));
+  document.querySelectorAll('.eye-btn').forEach((b) => {
+    b.title = eyeLabel();
+    b.setAttribute('aria-label', eyeLabel());
+    b.setAttribute('aria-pressed', String(A.showCode));
+    b.innerHTML = icon(A.showCode ? 'eye-off' : 'eye');
+  });
+}
+
+// hostitelem je ten, koho uvádí meta (stav hry se dorovná při jeho první akci)
+const iAmHost = () => (A.meta ? A.meta.hostUid === A.me : !!(A.s && A.s.hostId === A.me));
+
 // ---------- lobby ----------
 function renderLobby() {
   const s = A.s;
@@ -571,9 +617,9 @@ function renderLobby() {
     resetMoney();
     app.innerHTML = `<div class="screen lobby-screen"><div class="card lobby">
       <div class="card-top">${emblem('sm')}<div class="ct-text"><div class="eyebrow">Příprava hry</div><h1 class="title small">${GAME_NAME}</h1></div>${sndBtn()}</div>
-      <div class="room-code"><span>Kód hry</span><div class="code-tiles" data-a="copyLink" title="Kopírovat odkaz">${[...A.room]
-        .map((c) => `<b>${esc(c)}</b>`)
-        .join('')}</div></div>
+      <div class="room-code"><span>Kód hry</span><div class="code-box">${codeTilesHtml()}${eyeBtn('code-eye')}</div><small class="code-hint">${
+        IS_TOUCH ? 'Klepnutím' : 'Kliknutím'
+      } na kód ho zkopíruješ, i když je schovaný.</small></div>
       <div class="btn-row center share-row"><button class="btn secondary" data-a="copyLink">${icon('link')} Kopírovat odkaz</button>${
         navigator.share ? `<button class="btn secondary" data-a="shareLink">${icon('share')} Sdílet</button>` : ''
       }</div>
@@ -619,7 +665,11 @@ function renderLobby() {
           on ? 'online' : 'offline'
         }"></i></span><span class="pname">${esc(p.name)}${p.id === A.me ? ' <small>(ty)</small>' : ''}</span>${
           p.id === s.hostId ? '<span class="tag gold">hostitel</span>' : ''
-        }${host && p.id !== A.me ? `<button class="x-mini" data-a="kick" data-id="${p.id}" title="Odebrat z lobby" aria-label="Odebrat z lobby">✕</button>` : ''}</div>`;
+        }${
+          host && p.id !== A.me
+            ? `<button class="x-mini" data-a="kick" data-id="${p.id}" title="Vyhodit ze hry" aria-label="Vyhodit ze hry: ${esc(p.name)}">✕</button>`
+            : ''
+        }</div>`;
       })
       .join('') +
     (free > 0
@@ -852,7 +902,9 @@ function drawTopbar() {
     st.limitType === 'rounds' ? `Kolo <b>${Math.min(s.round, st.limitValue)}</b><small>/${st.limitValue}</small>` : `Kolo <b>${s.round}</b>`;
   const clock = st.limitType === 'minutes' ? `<span class="tb-item" title="Zbývající čas hry">${icon('clock')}<b id="tb-clock">${clockText()}</b></span>` : '';
   $('#topbar').innerHTML = `
-    <button class="room-chip" data-a="copyLink" title="Kopírovat odkaz na hru">${icon('link')}<b>${esc(A.room)}</b>${LOCAL ? '<small>lokálně</small>' : ''}</button>
+    <span class="room-chip"><button class="rc-copy" data-a="copyCode" title="Kopírovat kód hry${LOCAL ? ' (lokální testovací režim)' : ''}" aria-label="Kopírovat kód hry"><b class="code-text">${codeText()}</b></button>${eyeBtn(
+      'rc-eye'
+    )}</span>
     <span class="tb-item">${round}</span>${clock}
     <span class="tb-spacer"></span>
     ${sndBtn()}
@@ -1114,11 +1166,17 @@ function drawPlayers() {
   const s = A.s;
   const cur = s.phase === 'playing' ? E.curP(s).id : null;
   const hostId = A.meta ? A.meta.hostUid : s.hostId;
+  const amHost = hostId === A.me && !!E.getP(s, A.me);
   $('#players').innerHTML =
     `<div class="ph"><h3>Hráči</h3><span class="ph-meta">${E.activeP(s).length} ve hře</span></div>` +
     s.players
       .map((p) => {
         const on = !!A.pres[p.id];
+        const banned = E.isBanned(s, p.id);
+        const kick =
+          amHost && p.id !== A.me && !banned
+            ? `<button class="x-mini kick-mini" data-a="kick" data-id="${p.id}" title="Vyhodit ze hry" aria-label="Vyhodit ze hry: ${esc(p.name)}">✕</button>`
+            : '';
         const st = [];
         if (p.jail) st.push('<span class="tag red">distanc</span>');
         if (p.skip > 0) st.push('<span class="tag">vynechá</span>');
@@ -1128,8 +1186,8 @@ function drawPlayers() {
           <div class="pl-main">
             <div class="pl-name"><span class="pname">${esc(p.name)}</span>${p.id === A.me ? '<small>ty</small>' : ''}${
           p.id === hostId ? '<small>hostitel</small>' : ''
-        }</div>
-            <div class="pl-sub">${p.bankrupt ? 'mimo hru' : `<span class="pos">${esc(BOARD[p.pos].name)}</span>`}${st.join('')}</div>
+        }${kick}</div>
+            <div class="pl-sub">${p.bankrupt ? (banned ? 'vyhozen hostitelem' : 'mimo hru') : `<span class="pos">${esc(BOARD[p.pos].name)}</span>`}${st.join('')}</div>
           </div>
           <div class="pl-money">${
             p.bankrupt ? '<span class="bk">bankrot</span>' : `<b class="money" data-pid="${p.id}">${moneyText(p)}</b><small>jmění ${E.fmtN(E.netWorth(s, p.id))}</small>`
@@ -1436,7 +1494,11 @@ function playerModal(id) {
   const online = !!A.pres[id];
   const owned = BOARD.map((_, i) => i).filter((i) => s.owner[i] === id);
   const amPlayer = !!E.getP(s, A.me);
-  const canKick = s.phase === 'playing' && !p.bankrupt && amPlayer && (id === A.me || s.hostId === A.me || !online);
+  const host = iAmHost() && amPlayer;
+  const canKick =
+    amPlayer &&
+    !E.isBanned(s, id) &&
+    ((s.phase === 'playing' && !p.bankrupt && (id === A.me || host || !online)) || (host && id !== A.me && (s.phase === 'over' || p.bankrupt)));
   return `<div class="p-head" style="--pc:${p.color}"><span class="tok xl" style="--pc:${p.color}">${horse()}</span><div><h2>${esc(p.name)}${
     id === s.hostId ? ' <span class="tag gold">hostitel</span>' : ''
   }</h2><div class="muted">${online ? 'online' : 'offline'}${p.bankrupt ? ' · bankrot' : ` · ${esc(BOARD[p.pos].name)}`}</div></div></div>
@@ -1452,7 +1514,7 @@ function playerModal(id) {
         )
         .join('') || '<p class="empty-state">Nic nevlastní.</p>'
     }</div>
-    ${canKick ? `<button class="btn danger" data-a="kick" data-id="${id}">${id === A.me ? 'Vzdát hru' : 'Vyřadit ze hry'}</button>` : ''}`;
+    ${canKick ? `<button class="btn danger" data-a="kick" data-id="${id}">${id === A.me ? 'Vzdát hru' : host ? 'Vyhodit ze hry' : 'Vyřadit ze hry'}</button>` : ''}`;
 }
 
 function overModal() {
@@ -1538,12 +1600,12 @@ function toast(msg, kind = '') {
   toastTimer = setTimeout(() => (t.className = kind), 3500);
 }
 
-async function copyText(text) {
+async function copyText(text, done) {
   try {
     await navigator.clipboard.writeText(text);
-    toast('Odkaz zkopírován.');
+    toast(done);
   } catch {
-    window.prompt('Zkopíruj odkaz:', text);
+    window.prompt('Zkopíruj si:', text);
   }
 }
 
@@ -1623,15 +1685,18 @@ document.addEventListener('click', async (e) => {
     case 'kick': {
       const p = E.getP(A.s, id);
       if (!p) return;
+      const hostKick = iAmHost() && id !== A.me;
+      const loses = A.s.phase === 'playing' && !p.bankrupt;
       const q =
-        A.s.phase === 'lobby'
-          ? `Odebrat z lobby: <b>${esc(p.name)}</b>?`
-          : id === A.me
+        id === A.me
           ? 'Opravdu to chceš vzdát? Tvůj majetek se vrátí bance.'
+          : hostKick
+          ? `Vyhodit ze hry: <b>${esc(p.name)}</b>?${loses ? ' Majetek se vrátí bance.' : ''} Do této hry se už nebude moct vrátit.`
           : `Opravdu vyřadit ze hry: <b>${esc(p.name)}</b>? Majetek se vrátí bance.`;
-      if (await confirmBox(q, 'Ano', true)) {
+      if (await confirmBox(q, hostKick ? 'Vyhodit' : 'Ano', true)) {
         closeModal();
-        act({ t: 'kick', target: id });
+        const err = await act({ t: 'kick', target: id });
+        if (!err && hostKick) toast(`${p.name} je vyhozen(a) ze hry.`);
       }
       return;
     }
@@ -1651,7 +1716,12 @@ document.addEventListener('click', async (e) => {
       return showHome();
     }
     case 'copyLink':
-      return copyText(urlFor(A.room));
+      return copyText(urlFor(A.room), 'Odkaz zkopírován.');
+    case 'copyCode':
+      return copyText(A.room, 'Kód hry zkopírován.');
+    case 'toggleCode':
+      A.showCode = !A.showCode;
+      return refreshCode();
     case 'shareLink':
       return navigator.share({ title: GAME_NAME, text: 'Pojď si zahrát dostihy!', url: urlFor(A.room) }).catch(() => {});
     case 'join': {

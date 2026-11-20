@@ -35,6 +35,12 @@ export const propSellValue = (i) => Math.round(BOARD[i].price * RULES.propertySe
 export const getP = (s, id) => s.players.find((p) => p.id === id);
 export const curP = (s) => s.players[s.turn];
 export const activeP = (s) => s.players.filter((p) => !p.bankrupt);
+// hráči, které hostitel vyhodil – do místnosti se už nevrátí
+export const isBanned = (s, id) => !!(s && s.banned && s.banned.includes(id));
+function ban(s, id) {
+  if (!s.banned) s.banned = [];
+  if (!s.banned.includes(id)) s.banned.push(id);
+}
 export const ownsStable = (s, pid, st) => STABLE_SQ[st].every((j) => s.owner[j] === pid);
 export const debtOf = (s, pid) => s.debts.filter((d) => d.d === pid).reduce((x, d) => x + d.a, 0);
 
@@ -122,6 +128,7 @@ export function newRoom(hostId, hostName, color) {
     startedAt: null,
     ranking: null,
     out: [],
+    banned: [],
   };
   s.players.push(newPlayer(hostId, cleanName(hostName) || 'Hostitel', pickColor(s, color)));
   return s;
@@ -137,6 +144,15 @@ function pickColor(s, wanted) {
 function log(s, m) {
   s.log.push({ i: ++s.logSeq, m });
   if (s.log.length > 150) s.log.splice(0, s.log.length - 150);
+}
+
+// odebraný hráč už není v s.players, tak jeho jméno v průběhu hry zapíšeme natvrdo
+function removePlayer(s, id) {
+  const p = getP(s, id);
+  if (!p) return;
+  const tag = pn(id);
+  for (const e of s.log) if (e.m.includes(tag)) e.m = e.m.split(tag).join(p.name);
+  s.players = s.players.filter((q) => q.id !== id);
 }
 
 // události pro animaci (kostky, pohyb, karta) – každá akce má vlastní sadu
@@ -539,6 +555,7 @@ const ACTIONS = {
 
   // --- lobby ---
   join(s, id, a) {
+    if (isBanned(s, id)) return 'Hostitel tě z této hry vyhodil.';
     if (s.phase !== 'lobby') return 'Hra už začala.';
     if (getP(s, id)) return null;
     if (s.players.length >= RULES.maxPlayers) return `Hra je plná (max. ${RULES.maxPlayers} hráčů).`;
@@ -571,7 +588,7 @@ const ACTIONS = {
     const idx = s.players.findIndex((p) => p.id === id);
     if (idx < 0) return null;
     log(s, `${s.players[idx].name} odchází z lobby.`);
-    s.players.splice(idx, 1);
+    removePlayer(s, id);
     if (s.hostId === id) s.hostId = s.players[0] ? s.players[0].id : null;
   },
 
@@ -623,6 +640,7 @@ const ACTIONS = {
     if (s.phase !== 'over') return 'Hra ještě neskončila.';
     if (!getP(s, id)) return 'Nejsi ve hře.';
     if (!getP(s, s.hostId)) s.hostId = id;
+    for (const id of s.banned || []) removePlayer(s, id);
     for (const p of s.players) Object.assign(p, { money: 0, pos: 0, jail: false, skip: 0, bankrupt: false, passes: [] });
     Object.assign(s, { phase: 'lobby', ranking: null, out: [], trade: null, debts: [], lastCard: null, dice: [] });
     log(s, 'Nová hra – čeká se na spuštění.');
@@ -717,26 +735,39 @@ const ACTIONS = {
     goBankrupt(s, id, d.c, ctx);
   },
 
-  // vyřazení hráče (např. odešel) nebo vzdání se (target === id).
-  // Cizího hráče může vyřadit hostitel, ostatní jen toho, kdo je offline (ctx.online = Set online hráčů).
+  // Vyhození hráče hostitelem, vyřazení offline hráče kýmkoli, nebo vzdání se (target === id).
+  // Koho vyhodí hostitel, ten se dostane na seznam s.banned a do hry se už nevrátí
+  // (ani do odvety). ctx.online = Set online hráčů.
   kick(s, id, a, ctx) {
+    const host = id === s.hostId;
+    const t = getP(s, a.target);
     if (s.phase === 'lobby') {
-      if (id !== s.hostId) return 'Hráče z lobby může odebrat jen hostitel.';
-      if (a.target === id) return 'Sám sebe odebrat nemůžeš – použij „Opustit hru“.';
-      const idx = s.players.findIndex((p) => p.id === a.target);
-      if (idx < 0) return 'Hráč už v lobby není.';
-      log(s, `${s.players[idx].name} byl(a) odebrán(a) z lobby.`);
-      s.players.splice(idx, 1);
+      if (!host) return 'Hráče z lobby může vyhodit jen hostitel.';
+      if (a.target === id) return 'Sám sebe vyhodit nemůžeš – použij „Opustit hru“.';
+      if (!t) return 'Hráč už v lobby není.';
+      log(s, `Hostitel vyhodil ze hry: ${t.name}.`);
+      removePlayer(s, t.id);
+      ban(s, t.id);
+      return null;
+    }
+    if (!getP(s, id)) return 'Nejsi ve hře.';
+    if (!t) return 'Hráč už není ve hře.';
+    if (s.phase === 'over' || t.bankrupt) {
+      // po konci hry nebo u hráče v bankrotu jde jen o to, aby se nevrátil do odvety
+      if (!host || a.target === id) return 'Hráč už není ve hře.';
+      if (isBanned(s, t.id)) return null;
+      log(s, `Hostitel vyhodil ze hry: ${pn(t.id)}.`);
+      ban(s, t.id);
       return null;
     }
     if (s.phase !== 'playing') return 'Hra neběží.';
-    if (!getP(s, id)) return 'Nejsi ve hře.';
-    const t = getP(s, a.target);
-    if (!t || t.bankrupt) return 'Hráč už není ve hře.';
-    if (a.target !== id && id !== s.hostId && ctx.online && ctx.online.has(a.target))
-      return 'Vyřadit můžeš jen hráče, který je offline. Online hráče může vyřadit hostitel.';
-    log(s, a.target === id ? `${pn(id)} to vzdává.` : `${pn(id)} vyřazuje ze hry ${pn(t.id)}.`);
+    if (a.target !== id && !host && ctx.online && ctx.online.has(a.target))
+      return 'Vyřadit můžeš jen hráče, který je offline. Online hráče může vyhodit hostitel.';
+    if (a.target === id) log(s, `${pn(id)} to vzdává.`);
+    else if (host) log(s, `Hostitel vyhodil ze hry: ${pn(t.id)}.`);
+    else log(s, `${pn(id)} vyřazuje ze hry ${pn(t.id)}.`);
     goBankrupt(s, t.id, null, ctx);
+    if (host && a.target !== id) ban(s, t.id);
   },
 
   // --- obchod ---

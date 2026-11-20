@@ -1,1 +1,8 @@
 .claude/
+
+# Firebase konfigurace (API klíč) se do gitu nenahrává.
+# Vzor je v js/firebase-config.example.js, na GitHub Pages ji vytvoří GitHub Actions.
+js/firebase-config.js
+
+# výstup sestavení pro GitHub Pages
+_site/
