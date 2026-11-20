@@ -150,6 +150,6 @@ export const PLAYER_COLORS = [
   { name: 'Fialová', hex: '#8e24aa' },
   { name: 'Oranžová', hex: '#fb8c00' },
   { name: 'Růžová', hex: '#ec407a' },
-  { name: 'Tyrkysová', hex: '#00acc1' },
+  { name: 'Tyrkysová', hex: '#1cc3aa' },
   { name: 'Černá', hex: '#37474f' },
 ];

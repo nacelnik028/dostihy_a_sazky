@@ -575,13 +575,20 @@ function turnBanner(s) {
 }
 
 // ---------- kód hry: normálně schovaný, kliknutím se zkopíruje ----------
-const MASK = '•';
-const codeText = () => (A.showCode ? A.room : MASK.repeat(A.room.length));
-
-// dlaždice se při odkrytí otočí; schovaná strana ukazuje jen tečku
-function codeTilesHtml() {
-  return `<button class="code-tiles ${A.showCode ? 'shown' : ''}" data-a="copyCode" title="Kopírovat kód hry" aria-label="Kopírovat kód hry">${[...A.room]
-    .map((c) => `<b><i class="cf" aria-hidden="true">${MASK}</i><i class="cb">${esc(c)}</i></b>`)
+// Vypadá jako překlápěcí cedulky na sázkové tabuli: schovaná strana ukazuje podkovu,
+// při odkrytí horní půlka cedulky spadne dolů a pod ní je znak kódu.
+// Každá cedulka má dvě pevné půlky (nahoře znak, dole podkova) a padací klapku,
+// která má zepředu horní půlku podkovy a zezadu dolní půlku znaku.
+const SHOE = '<svg class="shoe" aria-hidden="true"><use href="#i-shoe"/></svg>';
+const flapHalf = (pos, html) => `<i class="h ${pos}"><s>${html}</s></i>`;
+function codeTilesHtml(cls = '', title = 'Kopírovat kód hry') {
+  return `<button class="code-tiles ${cls} ${A.showCode ? 'shown' : ''}" data-a="copyCode" title="${title}" aria-label="Kopírovat kód hry">${[
+    ...A.room,
+  ]
+    .map((c) => {
+      const ch = esc(c);
+      return `<b aria-hidden="true">${flapHalf('t', ch)}${flapHalf('l', SHOE)}<i class="fl">${flapHalf('t', SHOE)}${flapHalf('l', ch)}</i></b>`;
+    })
     .join('')}</button>`;
 }
 
@@ -593,7 +600,6 @@ const eyeBtn = (cls = '') =>
 
 function refreshCode() {
   document.querySelectorAll('.code-tiles').forEach((el) => el.classList.toggle('shown', A.showCode));
-  document.querySelectorAll('.code-text').forEach((el) => (el.textContent = codeText()));
   document.querySelectorAll('.eye-btn').forEach((b) => {
     b.title = eyeLabel();
     b.setAttribute('aria-label', eyeLabel());
@@ -902,9 +908,7 @@ function drawTopbar() {
     st.limitType === 'rounds' ? `Kolo <b>${Math.min(s.round, st.limitValue)}</b><small>/${st.limitValue}</small>` : `Kolo <b>${s.round}</b>`;
   const clock = st.limitType === 'minutes' ? `<span class="tb-item" title="Zbývající čas hry">${icon('clock')}<b id="tb-clock">${clockText()}</b></span>` : '';
   $('#topbar').innerHTML = `
-    <span class="room-chip"><button class="rc-copy" data-a="copyCode" title="Kopírovat kód hry${LOCAL ? ' (lokální testovací režim)' : ''}" aria-label="Kopírovat kód hry"><b class="code-text">${codeText()}</b></button>${eyeBtn(
-      'rc-eye'
-    )}</span>
+    <span class="room-chip">${codeTilesHtml('mini', `Kopírovat kód hry${LOCAL ? ' (lokální testovací režim)' : ''}`)}${eyeBtn('rc-eye')}</span>
     <span class="tb-item">${round}</span>${clock}
     <span class="tb-spacer"></span>
     ${sndBtn()}

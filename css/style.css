@@ -710,15 +710,34 @@ body.animating .dice.can-roll {
   font-weight: 700;
   margin-bottom: 8px;
 }
+/* tabule s kódem hry – zapuštěný papírový žlábek (jako vstupní pole), v něm překlápěcí cedulky */
 .code-box {
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+  padding: 10px 12px 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--paper-3), var(--paper-2));
+  box-shadow: inset 0 2px 5px rgba(60, 40, 10, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-.code-box .code-eye {
-  width: 44px;
-  height: 44px;
+.code-box .code-eye,
+.code-box .code-eye:hover {
+  width: 42px;
+  height: var(--fh, 60px);
+  margin-left: 6px;
+  border: 0;
+  border-left: 1.5px solid var(--line-2);
+  border-radius: 0 10px 10px 0;
+  background: transparent;
+  color: var(--ink-2);
+}
+.code-box .code-eye:hover {
+  background: rgba(160, 115, 15, 0.08);
+}
+.code-box .code-eye .ic {
+  width: 22px;
+  height: 22px;
 }
 .code-hint {
   display: block;
@@ -726,75 +745,141 @@ body.animating .dice.can-roll {
   font-size: 12.5px;
   color: var(--muted);
 }
+/* překlápěcí cedulky; --fw/--fh/--fs = šířka, výška a velikost písma cedulky */
 .code-tiles {
+  --fw: 46px;
+  --fh: 60px;
+  --fs: 40px;
+  --fr: 7px;
   display: flex;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   border: 0;
   background: none;
-  padding: 2px;
+  padding: 0;
   font: inherit;
   color: inherit;
-  border-radius: 14px;
+  border-radius: 10px;
+}
+.code-tiles:focus-visible {
+  outline: 3px solid rgba(255, 213, 90, 0.9);
+  outline-offset: 3px;
 }
 .code-tiles b {
-  width: 52px;
-  height: 62px;
-  display: grid;
-  place-items: center;
-  perspective: 300px;
-  font: 800 34px var(--cond);
-  background: linear-gradient(180deg, #fff, #f4ebd4);
-  border: 1px solid var(--line-2);
-  border-radius: 12px;
-  box-shadow: 0 3px 0 var(--line-2), 0 8px 16px rgba(60, 40, 0, 0.1);
+  position: relative;
+  flex: none;
+  width: var(--fw);
+  height: var(--fh);
+  perspective: 220px;
+  border-radius: var(--fr);
+  background: var(--line-2); /* prosvítá jako spára mezi půlkami */
+  box-shadow: 0 0 0 1px var(--line-2), 0 3px 0 var(--line-2), 0 6px 10px rgba(60, 40, 0, 0.12);
+  font: 800 var(--fs) / 1 var(--cond);
   color: var(--wood-dk);
   transition: transform 0.15s;
-}
-.code-tiles b:nth-child(odd) {
-  transform: rotate(-1.2deg);
-}
-.code-tiles b:nth-child(even) {
-  transform: rotate(1.2deg);
 }
 .code-tiles:hover b {
   transform: translateY(-2px);
 }
-/* schovaná strana (tečka) a skutečný znak se při odkrytí přetočí */
-.code-tiles i {
-  grid-area: 1 / 1;
+/* půlka cedulky – ukazuje jen horní nebo dolní polovinu znaku */
+.code-tiles .h {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(50% - 0.5px);
+  overflow: hidden;
   font-style: normal;
-  line-height: 1;
-  transition: transform 0.38s cubic-bezier(0.3, 0.9, 0.3, 1.25), opacity 0.2s;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
-.code-tiles .cf {
-  font-size: 1.3em;
-  color: var(--gold-dk);
+.code-tiles .h.t {
+  top: 0;
+  border-radius: var(--fr) var(--fr) 0 0;
+  background: linear-gradient(180deg, #fff, #f8f0dc);
 }
-.code-tiles .cb {
-  transform: rotateX(90deg);
-  opacity: 0;
+.code-tiles .h.l {
+  bottom: 0;
+  border-radius: 0 0 var(--fr) var(--fr);
+  background: linear-gradient(180deg, #efe3c4, #f7eed8);
 }
-.code-tiles.shown .cf {
-  transform: rotateX(-90deg);
-  opacity: 0;
+.code-tiles .h s {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--fh);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
 }
-.code-tiles.shown .cb {
+.code-tiles .h.t s {
+  top: 0;
+}
+.code-tiles .h.l s {
+  bottom: 0;
+}
+.code-tiles .shoe {
+  width: 0.6em;
+  height: 0.6em;
+  color: #c99323;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.8));
+}
+/* padací klapka: zepředu horní půlka podkovy, zezadu dolní půlka znaku */
+.code-tiles .fl {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  font-style: normal;
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.55, 0, 0.5, 1.12);
+}
+.code-tiles .fl .h {
+  top: 0;
+  bottom: auto;
+  height: calc(100% - 0.5px);
+}
+.code-tiles .fl .h.l {
+  transform: rotateX(180deg);
+}
+.code-tiles.shown .fl {
+  transform: rotateX(-180deg);
+}
+.code-tiles b:nth-child(2) .fl {
+  transition-delay: 0.07s;
+}
+.code-tiles b:nth-child(3) .fl {
+  transition-delay: 0.14s;
+}
+.code-tiles b:nth-child(4) .fl {
+  transition-delay: 0.21s;
+}
+.code-tiles b:nth-child(5) .fl {
+  transition-delay: 0.28s;
+}
+/* zmenšené cedulky v horní liště */
+.code-tiles.mini {
+  --fw: 17px;
+  --fh: 25px;
+  --fs: 18px;
+  --fr: 4px;
+  gap: 2px;
+  align-items: center;
+  height: 100%;
+  padding: 0 6px 0 7px;
+  border-radius: 0;
+}
+.code-tiles.mini b {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.code-tiles.mini:hover b {
   transform: none;
-  opacity: 1;
 }
-.code-tiles b:nth-child(2) i {
-  transition-delay: 0.04s;
-}
-.code-tiles b:nth-child(3) i {
-  transition-delay: 0.08s;
-}
-.code-tiles b:nth-child(4) i {
-  transition-delay: 0.12s;
-}
-.code-tiles b:nth-child(5) i {
-  transition-delay: 0.16s;
+.code-tiles.mini .shoe {
+  width: 0.7em;
+  height: 0.7em;
 }
 .share-row .btn {
   flex: 0 1 auto;
@@ -1847,19 +1932,7 @@ body.animating .dice.can-roll {
   height: 38px;
   overflow: hidden;
 }
-.room-chip .rc-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-  padding: 0 4px 0 10px;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.room-chip .rc-copy:hover,
+.room-chip .code-tiles:hover,
 .room-chip .rc-eye:hover {
   background: rgba(255, 255, 255, 0.12);
 }
@@ -1873,11 +1946,6 @@ body.animating .dice.can-roll {
 .room-chip .rc-eye .ic {
   width: 18px;
   height: 18px;
-}
-.room-chip b {
-  letter-spacing: 0.16em;
-  font: 800 17px var(--cond);
-  min-width: 3.5em; /* tečky i kód zaberou stejné místo */
 }
 .kick-mini {
   width: 22px;
@@ -3131,13 +3199,20 @@ body:has(.overlay) #app *::after {
   .card {
     padding: 20px 18px;
   }
-  .code-tiles {
-    gap: 6px;
+  .code-box {
+    padding: 10px 11px;
   }
-  .code-tiles b {
-    width: 44px;
+  .code-box .code-tiles {
+    --fw: 40px;
+    --fh: 54px;
+    --fs: 36px;
+    gap: 5px;
+  }
+  .code-box .code-eye,
+  .code-box .code-eye:hover {
+    width: 36px;
     height: 54px;
-    font-size: 30px;
+    margin-left: 4px;
   }
   .setstats {
     grid-template-columns: 1fr;
@@ -3169,6 +3244,21 @@ body:has(.overlay) #app *::after {
   .icon-btn {
     width: 34px;
     height: 34px;
+  }
+  .code-box {
+    padding: 9px 9px;
+  }
+  .code-box .code-tiles {
+    --fw: 34px;
+    --fh: 48px;
+    --fs: 32px;
+    gap: 4px;
+  }
+  .code-box .code-eye,
+  .code-box .code-eye:hover {
+    width: 32px;
+    height: 48px;
+    margin-left: 3px;
   }
 }
 
