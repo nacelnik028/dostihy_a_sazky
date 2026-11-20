@@ -106,7 +106,7 @@ Proto klíč není v repozitáři, ale skutečnou ochranu dávají tyto věci:
 | Žokejové | 4 pole; poplatek 1 000 / 2 000 / 3 000 / 4 000 podle počtu vlastněných |
 | Služby | Veterinář a Kovář; poplatek hod × 80, majitel obou hod × 200 |
 | Karty | Finance a Náhoda (16 + 16), propustku rušící distanc si můžeš nechat |
-| Distanc | končí **šestkou** nebo použitím propustky; po osvobozující šestce házíš znovu a táhneš podle nového hodu |
+| Distanc | dostaneš ho, když na pole stoupneš, po dvou šestkách nebo kartou; končí **šestkou** nebo použitím propustky; po osvobozující šestce házíš znovu a táhneš podle nového hodu |
 | Podezření z dopingu | (roh naproti Distancu) příští tah vynecháš; do té doby bereš za koně jen základní poplatek, ne za tréninky |
 | Prodej bance | koně, žokeje a služby za **plnou cenu**, tréninky za **polovinu**; stáj s tréninky nejde rozdělit |
 | Obchod | na svém tahu můžeš nabídnout výměnu majetku, peněz a propustek za dohodnutou cenu |

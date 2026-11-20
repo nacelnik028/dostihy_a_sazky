@@ -68,7 +68,7 @@ export const BOARD = [
   CARD('stesti'),
   H('Pasek', 1, 2000, [120, 600, 1800, 5200, 7000, 9000]),
   H('Koran', 1, 2400, [150, 750, 2200, 6000, 8200, 10500]),
-  { type: 'jail', name: 'Distanc', desc: 'Kdo sem jen stoupne, je na návštěvě. Distanc zruší šestka nebo propustka. Po osvobozující šestce házíš znovu a táhneš podle nového hodu.' },
+  { type: 'jail', name: 'Distanc', desc: 'Kdo sem stoupne, dostává distanc a stojí, dokud nehodí šestku nebo nepoužije propustku. Po osvobozující šestce házíš znovu a táhneš podle nového hodu.' },
   H('Neklan', 2, 2800, [200, 1000, 3000, 8000, 10500, 13000]),
   { type: 'service', name: 'Přeprava', price: 3000 },
   H('Portlancl', 2, 2800, [200, 1000, 3000, 8000, 10500, 13000]),

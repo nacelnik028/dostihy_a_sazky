@@ -741,7 +741,7 @@ function cellHtml(b, i) {
   } else if (b.type === 'card') {
     inner = `<div class="cbody"><div class="minicard deck-${b.deck}"></div><div class="cname">${esc(b.name)}</div></div>`;
   } else {
-    const sub = b.type === 'start' ? '<div class="csub" id="start-bonus"></div>' : b.type === 'jail' ? '<div class="csub">i návštěva</div>' : '';
+    const sub = b.type === 'start' ? '<div class="csub" id="start-bonus"></div>' : b.type === 'jail' ? '<div class="csub">do šestky</div>' : '';
     inner = `<div class="cbody"><div class="cname">${esc(b.name)}</div>${sub}</div>`;
   }
   return `<div class="cell ${sideOf(i)} t-${b.type}${b.type === 'card' ? ` deck-${b.deck}` : ''}" style="${sc}grid-row:${r};grid-column:${c}" data-a="sq" data-i="${i}">${inner}<div class="tokens"></div></div>`;
@@ -1360,7 +1360,7 @@ function sqModal(i) {
   } else if (b.type === 'start') {
     h += `<p>${esc(b.desc)}</p><div class="facts"><span>Odměna <b>${E.fmt(s.settings.startBonus)}</b></span></div>`;
   } else if (b.type === 'jail') {
-    h += `<p>${esc(b.desc)}</p><p class="muted small">Distanc dostaneš i po dvou šestkách v jednom tahu.</p>`;
+    h += `<p>${esc(b.desc)}</p><p class="muted small">Distanc dostaneš i po dvou šestkách v jednom tahu nebo kartou.</p>`;
   } else {
     h += `<p>${esc(b.desc || '')}</p>${b.amount ? `<div class="facts"><span>Částka <b>${E.fmt(b.amount)}</b></span></div>` : ''}`;
   }
@@ -1562,7 +1562,7 @@ function rulesModal() {
     ['Karty', `${Object.values(DECKS)
       .map((d) => esc(d.name))
       .join(' a ')}. Propustku rušící distanc si můžeš nechat na později.`],
-    ['Distanc', 'Končí <b>šestkou</b> (pak házíš znovu a táhneš) nebo použitím propustky.'],
+    ['Distanc', 'Dostaneš ho, když na pole Distanc stoupneš, po dvou šestkách nebo kartou. Končí <b>šestkou</b> (pak házíš znovu a táhneš) nebo použitím propustky.'],
     [esc(SKIP_NAME), 'Příští tah vynecháš. Do té doby bereš za koně jen základní poplatek.'],
     ['Peníze', `Na začátku ${E.fmt(st.startMoney)}, za průchod Startem ${E.fmt(
       st.startBonus

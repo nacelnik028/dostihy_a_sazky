@@ -269,6 +269,11 @@ function land(s, p, ctx, opts) {
     return;
   }
   if (b.type === 'card') return drawCard(s, p, b.deck, ctx);
+  if (b.type === 'jail') {
+    log(s, `${pn(p.id)} zastavuje na poli ${b.name} a dostává distanc!`);
+    sendToJail(s, p);
+    return;
+  }
   if (b.type === 'tax') {
     log(s, `${pn(p.id)} platí ${b.acc} ${fmt(b.amount)}.`);
     charge(s, p.id, b.amount, null);
