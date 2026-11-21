@@ -4,5 +4,10 @@
 # Vzor je v js/firebase-config.example.js, na GitHub Pages ji vytvoří GitHub Actions.
 js/firebase-config.js
 
+# Klíče servisních účtů (Google Cloud) patří jen do tajemství na GitHubu, nikdy do gitu.
+*adminsdk*.json
+*service-account*.json
+uklid-her*.json
+
 # výstup sestavení pro GitHub Pages
 _site/

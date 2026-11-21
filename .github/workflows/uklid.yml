@@ -1,0 +1,41 @@
+# Denní úklid vypršelých her (24 hodin bez tahu) z Firebase databáze.
+#
+# Přihlašuje se klíčem servisního účtu z tajemství FIREBASE_SERVICE_ACCOUNT
+# (účet má jen roli Firebase Realtime Database Admin). Klíč není v repozitáři,
+# do logu se nevypisuje a log ukazuje jen počty her, protože repozitář je veřejný.
+# Postup nastavení je v README.md (Automatický úklid starých her).
+name: Úklid vypršelých her
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # každý den ve 3:17 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Zkušební běh: jen spočítat vypršelé hry, nic nemazat'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uklid
+  cancel-in-progress: false
+
+jobs:
+  uklid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # připnuto na přesný commit (v7), ať nikdo nemůže podstrčit jiný kód ke klíči
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Smazat vypršelé hry
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: node tools/uklid-her.mjs

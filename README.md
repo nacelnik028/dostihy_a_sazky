@@ -80,6 +80,39 @@ Proto klíč není v repozitáři, ale skutečnou ochranu dávají tyto věci:
   Z jiných webů pak klíč nefunguje.
 - **Authorized domains** ve Firebase Authentication (krok 3 výše): jen tyto domény smí přihlašovat hráče.
 
+## Automatický úklid starých her
+
+Hra vyprší po 24 hodinách bez tahu. Jednou denně (ve 3:17 UTC) ji z databáze smaže GitHub Actions
+([`.github/workflows/uklid.yml`](.github/workflows/uklid.yml), skript [`tools/uklid-her.mjs`](tools/uklid-her.mjs)).
+Potřebuje k tomu klíč servisního účtu. Ten má plný přístup k databázi (obchází pravidla), proto:
+
+- je uložený **jen jako tajemství na GitHubu** (šifrované, v repozitáři ani v logu se neobjeví),
+- servisní účet má **jen roli pro databázi**, k přihlašování hráčů ani jinam se nedostane,
+- log ukazuje jen počty her, protože repozitář je veřejný,
+- klíč jde kdykoli zrušit (Google Cloud → servisní účet → Keys → smazat).
+
+Nastavení (jednou):
+
+1. Otevři <https://console.cloud.google.com/iam-admin/serviceaccounts> a nahoře vyber svůj Firebase projekt.
+2. **+ Create service account** → *Service account name:* `uklid-her` → **Create and continue**.
+3. *Role:* vyhledej a vyber **Firebase Realtime Database Admin** → **Continue** → **Done**.
+4. V seznamu klikni na `uklid-her@…` → záložka **Keys** → **Add key** → **Create new key** → **JSON** → **Create**.
+   Soubor s klíčem se stáhne do Stažených souborů. Nikomu ho neposílej a nedávej do složky projektu.
+5. V PowerShellu ve složce projektu ulož klíč do tajemství `FIREBASE_SERVICE_ACCOUNT` (příkaz soubor najde
+   podle názvu účtu a po uložení ho smaže):
+
+   ```powershell
+   $f = Get-ChildItem "$env:USERPROFILE\Downloads\*.json" | Where-Object { Select-String -Path $_.FullName -Pattern 'uklid-her@' -Quiet } | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { 'Klíč jsem ve Stažených souborech nenašel.' } else { Get-Content -Raw $f.FullName | gh secret set FIREBASE_SERVICE_ACCOUNT; if ($?) { Remove-Item $f.FullName; 'Klíč je uložený na GitHubu a soubor smazaný.' } }
+   ```
+
+   Bez příkazové řádky: GitHub → **Settings → Secrets and variables → Actions → New repository secret**,
+   název `FIREBASE_SERVICE_ACCOUNT`, hodnota celý obsah staženého souboru. Soubor pak smaž.
+6. Vyzkoušej: GitHub → **Actions → Úklid vypršelých her → Run workflow**. Se zaškrtnutým zkušebním během
+   jen spočítá vypršelé hry, bez zaškrtnutí je smaže.
+
+GitHub u veřejných repozitářů vypíná naplánované úlohy po 60 dnech bez commitu (předem pošle e-mail),
+zapnout se dají znovu na záložce Actions.
+
 ---
 
 ## Jak se hraje
@@ -134,7 +167,8 @@ Jména, ceny, poplatky i texty karet se mění v souboru [`js/config.js`](js/con
 - Hru, ve které se 24 hodin nic nestalo, smí smazat kdokoli, běžící hru nikdo. Hlídají to pravidla
   podle času serveru. Server sám nic nemaže (to by chtělo Cloud Functions), mažou prohlížeče hráčů:
   kdo otevře vypršelý odkaz, hru smaže. Prohlížeč si navíc pamatuje posledních 30 her, ve kterých byl,
-  a při každém spuštění hry z nich vypršelé smaže. Seznam všech her si nikdo přečíst nemůže.
+  a při každém spuštění hry z nich vypršelé smaže. Seznam všech her si hráči přečíst nemůžou.
+  Zbytek jednou denně uklidí GitHub Actions, viz [Automatický úklid starých her](#automatický-úklid-starých-her).
 - Offline hráče může kdokoli vyřadit, online hráče jen hostitel. Koho vyhodí hostitel, ten je
   na seznamu vyhozených: hostitelův engine odmítne jeho připojení i všechny akce a nemůže převzít roli hostitele.
 - Firebase konfigurace (API klíč) není v repozitáři, viz [Zveřejnění na GitHub Pages](#zveřejnění-na-github-pages).
@@ -160,3 +194,4 @@ vlastní server, například Firebase Cloud Functions. Ty ale vyžadují tarif B
 | `js/firebase-config.js` | tvoje Firebase konfigurace (jen u tebe, v gitu není) |
 | `.github/workflows/pages.yml` | nasazení na GitHub Pages, konfiguraci doplní z tajemství `FIREBASE_CONFIG` |
 | `database.rules.json` | pravidla databáze (vložit do Firebase konzole) |
+| `.github/workflows/uklid.yml`, `tools/uklid-her.mjs` | denní úklid vypršelých her (klíč z tajemství `FIREBASE_SERVICE_ACCOUNT`) |
