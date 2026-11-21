@@ -104,6 +104,7 @@ async function boot() {
   const code = cleanCode(params.get('room'));
   if (code && A.backend) enterRoom(code);
   else showHome(code);
+  if (A.backend) sweepRooms();
   setInterval(() => checkAlive() && checkTakeover(), 3000);
   setInterval(tickClock, 1000);
 }
@@ -200,7 +201,6 @@ async function createGame() {
       const code = roomCode();
       if (await A.backend.createRoom(code, E.newRoom(A.me, name, PLAYER_COLORS[0].hex))) {
         A.busy = false;
-        A.backend.sweep(); // na pozadí smaže pár vypršelých her
         return enterRoom(code);
       }
     }
@@ -282,10 +282,32 @@ function checkAlive() {
   }
   if (!A.alive) {
     A.alive = true;
+    rememberRoom(A.room);
     updateHostRole();
     if (A.raw) onState(A.raw);
   }
   return true;
+}
+
+// Hry, ve kterých tento prohlížeč byl. Při každém spuštění hry z nich smaže vypršelé,
+// takže se databáze neplní, i když starý odkaz už nikdo neotevře.
+const ROOMS_KEY = LOCAL ? 'ds_rooms_local' : 'ds_rooms';
+function knownRooms() {
+  try {
+    const v = JSON.parse(lsGet(ROOMS_KEY));
+    return Array.isArray(v) ? v.filter((c) => typeof c === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function rememberRoom(code) {
+  lsSet(ROOMS_KEY, JSON.stringify([code, ...knownRooms().filter((c) => c !== code)].slice(0, 30)));
+}
+async function sweepRooms() {
+  const codes = knownRooms().filter((c) => c !== A.room);
+  if (!codes.length) return;
+  const gone = new Set(await A.backend.sweep(codes));
+  if (gone.size) lsSet(ROOMS_KEY, JSON.stringify(knownRooms().filter((c) => !gone.has(c))));
 }
 
 async function onState(s) {

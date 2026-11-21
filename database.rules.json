@@ -1,8 +1,6 @@
 {
   "rules": {
     "rooms": {
-      ".read": "auth != null && query.orderByChild === 'active' && query.endAt <= now - 86400000 && query.limitToFirst <= 10",
-      ".indexOn": ["active"],
       "$room": {
         ".write": "auth != null && !newData.exists() && (!data.child('meta').exists() || (data.child('active').isNumber() && data.child('active').val() < now - 86400000) || (!data.child('active').exists() && data.child('meta/created').val() < now - 86400000))",
         "meta": {

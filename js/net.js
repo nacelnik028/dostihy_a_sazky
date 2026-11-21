@@ -10,7 +10,8 @@
 //     když je původní hostitel offline).
 //   - hra vyprší po ROOM_TTL bez jediné akce. Vypršelou hru smí smazat kdokoli
 //     (běžící ne, hlídají to pravidla), tím se uvolní i její kód pro novou hru.
-//     Mažou ji prohlížeče hráčů: při otevření starého odkazu a při zakládání hry.
+//     Mažou ji prohlížeče hráčů: při otevření starého odkazu, při zakládání hry na stejném
+//     kódu a při spuštění hry (prohlížeč si pamatuje hry, ve kterých byl).
 //
 //  Stejné rozhraní má i lokální testovací backend (localStorage + záložky prohlížeče).
 // ============================================================
@@ -20,7 +21,6 @@ export const DUP = '__dup__';
 const REPLY_TIMEOUT = 15000;
 // za jak dlouho bez akce hra vyprší (stejné číslo 86400000 je v database.rules.json)
 export const ROOM_TTL = 24 * 60 * 60 * 1000;
-const SWEEP_LIMIT = 10; // kolik vypršelých her smaže jedno založení hry (limit je i v pravidlech)
 
 // čas poslední akce ve hře (u her z doby před zavedením expirace jen čas založení)
 export function lastActivity(meta, active) {
@@ -61,7 +61,7 @@ async function firebaseBackend(config) {
 
   const db = db_.getDatabase(app);
   const { ref, onValue, onChildAdded, runTransaction, set, update, push, remove, onDisconnect } = db_;
-  const { serverTimestamp, get, query, orderByChild, endAt, limitToFirst } = db_;
+  const { serverTimestamp, get } = db_;
   const R = (code, path = '') => ref(db, `rooms/${code}${path ? '/' + path : ''}`);
   const pending = new Map();
   // odchylka hodin zařízení od serveru, ať expirace nezávisí na špatně nastaveném čase
@@ -212,15 +212,19 @@ async function firebaseBackend(config) {
       }
     },
 
-    // smaže pár vypršelých her, aby se databáze neplnila a kódy se uvolňovaly
-    async sweep() {
-      try {
-        const cutoff = now() - ROOM_TTL - 60000; // rezerva, ať pravidla dotaz určitě pustí
-        const snap = await get(query(ref(db, 'rooms'), orderByChild('active'), endAt(cutoff), limitToFirst(SWEEP_LIMIT)));
-        await Promise.all(Object.keys(snap.val() || {}).map(dropRoom));
-      } catch (e) {
-        console.warn('Úklid vypršelých her se nepovedl:', e.message);
-      }
+    // z daných her smaže vypršelé; vrací kódy her, které už neexistují
+    async sweep(codes) {
+      const gone = [];
+      await Promise.all(
+        codes.map(async (c) => {
+          try {
+            const [m, a] = await Promise.all([get(R(c, 'meta')), get(R(c, 'active'))]);
+            if (!m.exists()) gone.push(c);
+            else if (now() - lastActivity(m.val(), a.val()) > ROOM_TTL && (await dropRoom(c))) gone.push(c);
+          } catch {}
+        })
+      );
+      return gone;
     },
   };
 }
@@ -418,13 +422,10 @@ function localBackend() {
       return true;
     },
 
-    async sweep() {
-      const codes = new Set();
-      for (let k = 0; k < localStorage.length; k++) {
-        const m = (localStorage.key(k) || '').match(/^ds:([A-Z0-9]{5}):/);
-        if (m) codes.add(m[1]);
-      }
-      for (const c of codes) await dropRoom(c);
+    async sweep(codes) {
+      const gone = [];
+      for (const c of codes) if (await dropRoom(c)) gone.push(c);
+      return gone;
     },
   };
 }

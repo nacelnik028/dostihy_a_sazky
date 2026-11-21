@@ -133,8 +133,8 @@ Jména, ceny, poplatky i texty karet se mění v souboru [`js/config.js`](js/con
   Pravidla to dovolí jen tehdy, když je původní hostitel opravdu offline.
 - Hru, ve které se 24 hodin nic nestalo, smí smazat kdokoli, běžící hru nikdo. Hlídají to pravidla
   podle času serveru. Server sám nic nemaže (to by chtělo Cloud Functions), mažou prohlížeče hráčů:
-  kdo otevře vypršelý odkaz, hru smaže, a každé založení nové hry smaže až 10 vypršelých her.
-  Seznam vypršelých her si smí přečíst každý přihlášený, seznam běžících her nikdo.
+  kdo otevře vypršelý odkaz, hru smaže. Prohlížeč si navíc pamatuje posledních 30 her, ve kterých byl,
+  a při každém spuštění hry z nich vypršelé smaže. Seznam všech her si nikdo přečíst nemůže.
 - Offline hráče může kdokoli vyřadit, online hráče jen hostitel. Koho vyhodí hostitel, ten je
   na seznamu vyhozených: hostitelův engine odmítne jeho připojení i všechny akce a nemůže převzít roli hostitele.
 - Firebase konfigurace (API klíč) není v repozitáři, viz [Zveřejnění na GitHub Pages](#zveřejnění-na-github-pages).
