@@ -1,11 +1,19 @@
 {
   "rules": {
     "rooms": {
+      ".read": "auth != null && query.orderByChild === 'active' && query.endAt <= now - 86400000 && query.limitToFirst <= 10",
+      ".indexOn": ["active"],
       "$room": {
+        ".write": "auth != null && !newData.exists() && (!data.child('meta').exists() || (data.child('active').isNumber() && data.child('active').val() < now - 86400000) || (!data.child('active').exists() && data.child('meta/created').val() < now - 86400000))",
         "meta": {
           ".read": "auth != null",
           ".write": "auth != null && $room.matches(/^[A-Z0-9]{5}$/) && newData.exists() && newData.child('hostUid').val() === auth.uid && (!data.exists() || (newData.child('created').val() === data.child('created').val() && !root.child('presence').child($room).child(data.child('hostUid').val()).exists() && root.child('rooms').child($room).child('members').child(auth.uid).exists()))",
           ".validate": "newData.hasChildren(['hostUid', 'created']) && newData.child('created').isNumber()"
+        },
+        "active": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()",
+          ".validate": "newData.val() === now"
         },
         "members": {
           ".read": "auth != null",
@@ -19,7 +27,7 @@
         "actions": {
           ".read": "auth != null && auth.uid === root.child('rooms').child($room).child('meta/hostUid').val()",
           "$aid": {
-            ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || (!newData.exists() && (data.child('uid').val() === auth.uid || auth.uid === root.child('rooms').child($room).child('meta/hostUid').val())))",
+            ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid && root.child('rooms').child($room).child('meta').exists()) || (!newData.exists() && (data.child('uid').val() === auth.uid || auth.uid === root.child('rooms').child($room).child('meta/hostUid').val())))",
             ".validate": "newData.hasChildren(['uid', 'a', 't']) && newData.child('a').isString() && newData.child('a').val().length < 3000"
           }
         },
@@ -34,6 +42,7 @@
     "presence": {
       "$room": {
         ".read": "auth != null",
+        ".write": "auth != null && !newData.exists() && (!root.child('rooms').child($room).child('meta').exists() || (root.child('rooms').child($room).child('active').isNumber() && root.child('rooms').child($room).child('active').val() < now - 86400000) || (!root.child('rooms').child($room).child('active').exists() && root.child('rooms').child($room).child('meta/created').val() < now - 86400000))",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid",
           ".validate": "newData.isBoolean()"

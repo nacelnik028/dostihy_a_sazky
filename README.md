@@ -24,6 +24,7 @@ Každá záložka je jeden hráč. Tento režim funguje jen v rámci jednoho pro
 4. **Realtime Database** → *Create database* → umístění **europe-west1 (Belgie)** → *Start in locked mode*.
 5. V Realtime Database otevři záložku **Rules**, smaž obsah, vlož celý obsah souboru
    [`database.rules.json`](database.rules.json) a klikni na **Publish**.
+   Když se pravidla v repozitáři změní, vlož je znovu stejně. **Nejdřív pravidla, pak push kódu.**
 6. Ozubené kolo → **Project settings** → *Your apps* → ikona **`</>`** (Web) → zaregistruj aplikaci
    (Firebase Hosting nezaškrtávej). Zobrazí se `firebaseConfig`.
 7. Zkopíruj soubor [`js/firebase-config.example.js`](js/firebase-config.example.js) jako `js/firebase-config.js`
@@ -84,6 +85,8 @@ Proto klíč není v repozitáři, ale skutečnou ochranu dávají tyto věci:
 ## Jak se hraje
 
 - Jeden hráč hru **založí** (stane se hostitelem) a pošle ostatním **odkaz** nebo **5místný kód**.
+- Hra **vyprší po 24 hodinách bez jediného tahu**. Odkaz ani kód pak nefungují, hra se smaže
+  a její kód může dostat nová hra. Hra, která se hraje, nevyprší.
 - Kód hry je **schovaný** (vidíš jen tečky), aby ho nepřečetl nikdo, kdo se dívá na tvoji obrazovku.
   Kliknutím na kód se zkopíruje, tlačítko s okem ho ukáže nebo zase schová.
 - Hostitel může hráče **vyhodit** (křížek u jména v lobby i ve hře, nebo v detailu hráče).
@@ -128,6 +131,10 @@ Jména, ceny, poplatky i texty karet se mění v souboru [`js/config.js`](js/con
 - Pořadí karet se nikde neukládá, karta se losuje až při tažení, takže nejde dopředu vykoukat.
 - Když hostitel vypadne (zavře prohlížeč, zhasne mobil), roli **automaticky převezme** jiný online hráč.
   Pravidla to dovolí jen tehdy, když je původní hostitel opravdu offline.
+- Hru, ve které se 24 hodin nic nestalo, smí smazat kdokoli, běžící hru nikdo. Hlídají to pravidla
+  podle času serveru. Server sám nic nemaže (to by chtělo Cloud Functions), mažou prohlížeče hráčů:
+  kdo otevře vypršelý odkaz, hru smaže, a každé založení nové hry smaže až 10 vypršelých her.
+  Seznam vypršelých her si smí přečíst každý přihlášený, seznam běžících her nikdo.
 - Offline hráče může kdokoli vyřadit, online hráče jen hostitel. Koho vyhodí hostitel, ten je
   na seznamu vyhozených: hostitelův engine odmítne jeho připojení i všechny akce a nemůže převzít roli hostitele.
 - Firebase konfigurace (API klíč) není v repozitáři, viz [Zveřejnění na GitHub Pages](#zveřejnění-na-github-pages).

@@ -3,7 +3,7 @@
 // ============================================================
 import { BOARD, STABLES, RULES, CARDS, DECKS, JOCKEY_COLOR, PLAYER_COLORS, GAME_NAME, SETTINGS_OPTIONS } from './config.js';
 import * as E from './engine.js';
-import { makeBackend, DUP } from './net.js';
+import { makeBackend, DUP, ROOM_TTL, lastActivity } from './net.js';
 import { sound, unlock, play as sfx } from './sound.js';
 import { floatAt, confetti, reducedMotion } from './fx.js';
 
@@ -61,6 +61,9 @@ const A = {
   s: null,
   prev: null,
   meta: undefined,
+  active: undefined, // čas poslední akce ve hře (undefined = ještě nenačteno)
+  alive: false, // hra je načtená a nevypršela, smí se vykreslit
+  raw: null, // poslední stav hry ze serveru (drží se, dokud není jasné, že hra nevypršela)
   pres: {},
   unwatch: null,
   seq: null,
@@ -101,7 +104,7 @@ async function boot() {
   const code = cleanCode(params.get('room'));
   if (code && A.backend) enterRoom(code);
   else showHome(code);
-  setInterval(checkTakeover, 3000);
+  setInterval(() => checkAlive() && checkTakeover(), 3000);
   setInterval(tickClock, 1000);
 }
 
@@ -197,6 +200,7 @@ async function createGame() {
       const code = roomCode();
       if (await A.backend.createRoom(code, E.newRoom(A.me, name, PLAYER_COLORS[0].hex))) {
         A.busy = false;
+        A.backend.sweep(); // na pozadí smaže pár vypršelých her
         return enterRoom(code);
       }
     }
@@ -215,6 +219,9 @@ function enterRoom(code) {
     s: null,
     prev: null,
     meta: undefined,
+    active: undefined,
+    alive: false,
+    raw: null,
     pres: {},
     seq: null,
     screen: null,
@@ -229,12 +236,21 @@ function enterRoom(code) {
   history.replaceState(null, '', urlFor(code));
   app.innerHTML = screen(`<div class="loader">${emblem('spin')}<p>Připojuji se ke hře…</p></div>`);
   A.unwatch = A.backend.watchRoom(code, {
-    onState: (s) => onState(s),
+    onState: (s) => {
+      A.raw = s;
+      if (A.alive) onState(s);
+    },
     onMeta: (m) => {
+      // meta zmizí jen tehdy, když hru někdo smazal jako vypršelou
+      if (m === null) return showHome('', A.meta ? expiredMsg(code) : `Hra s kódem ${code} neexistuje.`);
       A.meta = m;
-      if (m === null) return showHome('', `Hra s kódem ${code} neexistuje.`);
+      if (!checkAlive()) return;
       updateHostRole();
       if (A.s && !A.anim) render();
+    },
+    onActive: (t) => {
+      A.active = t;
+      checkAlive();
     },
     onPresence: (p) => {
       A.pres = p || {};
@@ -247,8 +263,29 @@ function enterRoom(code) {
 function leaveRoom() {
   if (A.unwatch) A.unwatch();
   if (A.hostOff) A.hostOff();
-  Object.assign(A, { unwatch: null, hostOff: null, queue: [], room: null, s: null, prev: null, meta: undefined });
+  Object.assign(A, { unwatch: null, hostOff: null, queue: [], room: null, s: null, prev: null, meta: undefined, active: undefined, alive: false, raw: null });
   closeModal();
+}
+
+const expiredMsg = (code) => `Hra s kódem ${code} vypršela, protože se v ní ${ROOM_TTL / 3600000} hodin nehrálo. Založ novou.`;
+
+// Hra vyprší po ROOM_TTL bez jediné akce: kdo ji pak otevře (nebo v ní má otevřenou záložku),
+// ten ji smaže a tím uvolní její kód. Dokud nevíme, jestli hra žije, nic se nevykresluje
+// ani nezpracovává. Vrací true, když je hra načtená a platná.
+function checkAlive() {
+  if (!A.room || !A.meta || A.active === undefined) return false;
+  if (A.backend.now() - lastActivity(A.meta, A.active) > ROOM_TTL) {
+    const code = A.room;
+    A.backend.dropRoom(code);
+    showHome('', expiredMsg(code));
+    return false;
+  }
+  if (!A.alive) {
+    A.alive = true;
+    updateHostRole();
+    if (A.raw) onState(A.raw);
+  }
+  return true;
 }
 
 async function onState(s) {

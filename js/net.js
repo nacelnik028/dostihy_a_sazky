@@ -8,6 +8,9 @@
 //     hostitelův prohlížeč je ověří herním enginem, sám hází kostkou a zapíše výsledek,
 //   - když hostitel vypadne, roli převezme jiný hráč (pravidla to dovolí jen,
 //     když je původní hostitel offline).
+//   - hra vyprší po ROOM_TTL bez jediné akce. Vypršelou hru smí smazat kdokoli
+//     (běžící ne, hlídají to pravidla), tím se uvolní i její kód pro novou hru.
+//     Mažou ji prohlížeče hráčů: při otevření starého odkazu a při zakládání hry.
 //
 //  Stejné rozhraní má i lokální testovací backend (localStorage + záložky prohlížeče).
 // ============================================================
@@ -15,6 +18,14 @@
 const FB = '10.12.2';
 export const DUP = '__dup__';
 const REPLY_TIMEOUT = 15000;
+// za jak dlouho bez akce hra vyprší (stejné číslo 86400000 je v database.rules.json)
+export const ROOM_TTL = 24 * 60 * 60 * 1000;
+const SWEEP_LIMIT = 10; // kolik vypršelých her smaže jedno založení hry (limit je i v pravidlech)
+
+// čas poslední akce ve hře (u her z doby před zavedením expirace jen čas založení)
+export function lastActivity(meta, active) {
+  return Math.max((meta && meta.created) || 0, active || 0);
+}
 
 // Seznam členů místnosti pro pravidla databáze (jen členové smí převzít roli hostitele).
 // Vyhození hráči v něm nejsou, i když ve stavu hry zůstávají jako vyřazení.
@@ -50,19 +61,38 @@ async function firebaseBackend(config) {
 
   const db = db_.getDatabase(app);
   const { ref, onValue, onChildAdded, runTransaction, set, update, push, remove, onDisconnect } = db_;
+  const { serverTimestamp, get, query, orderByChild, endAt, limitToFirst } = db_;
   const R = (code, path = '') => ref(db, `rooms/${code}${path ? '/' + path : ''}`);
   const pending = new Map();
+  // odchylka hodin zařízení od serveru, ať expirace nezávisí na špatně nastaveném čase
+  let offset = 0;
+  onValue(ref(db, '.info/serverTimeOffset'), (snap) => (offset = Number(snap.val()) || 0));
+  const now = () => Date.now() + offset;
+
+  // smaže celou hru i s přítomností hráčů; pravidla to dovolí jen u vypršelé hry
+  async function dropRoom(code) {
+    try {
+      await update(ref(db), { [`rooms/${code}`]: null, [`presence/${code}`]: null });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   return {
     kind: 'firebase',
     uid,
+    now,
+    dropRoom,
 
     async createRoom(code, state) {
+      await dropRoom(code); // když kód patří vypršelé hře, uvolní ho; běžící hru pravidla smazat nedovolí
       try {
-        await set(R(code, 'meta'), { hostUid: uid, created: Date.now() });
+        await set(R(code, 'meta'), { hostUid: uid, created: serverTimestamp() });
       } catch (e) {
-        return false; // kód už existuje
+        return false; // kód má běžící hra
       }
+      await set(R(code, 'active'), serverTimestamp()).catch(() => {});
       await set(R(code, 'members'), { [uid]: true });
       await set(R(code, 'state'), { s: JSON.stringify(state), v: 1 });
       return true;
@@ -81,6 +111,7 @@ async function firebaseBackend(config) {
         )
       );
       offs.push(onValue(R(code, 'meta'), (snap) => h.onMeta(snap.val())));
+      offs.push(onValue(R(code, 'active'), (snap) => h.onActive(snap.val())));
       offs.push(onValue(ref(db, `presence/${code}`), (snap) => h.onPresence(snap.val() || {})));
       offs.push(
         onValue(R(code, `replies/${uid}`), (snap) => {
@@ -168,6 +199,8 @@ async function firebaseBackend(config) {
       };
       if (newState) upd.members = membersOf(newState);
       await update(R(code), upd);
+      // čas poslední akce; zvlášť, aby tah nerozbila ještě nenahraná pravidla bez uzlu "active"
+      set(R(code, 'active'), serverTimestamp()).catch(() => {});
     },
 
     async claimHost(code, created) {
@@ -176,6 +209,17 @@ async function firebaseBackend(config) {
         return true;
       } catch (e) {
         return false;
+      }
+    },
+
+    // smaže pár vypršelých her, aby se databáze neplnila a kódy se uvolňovaly
+    async sweep() {
+      try {
+        const cutoff = now() - ROOM_TTL - 60000; // rezerva, ať pravidla dotaz určitě pustí
+        const snap = await get(query(ref(db, 'rooms'), orderByChild('active'), endAt(cutoff), limitToFirst(SWEEP_LIMIT)));
+        await Promise.all(Object.keys(snap.val() || {}).map(dropRoom));
+      } catch (e) {
+        console.warn('Úklid vypršelých her se nepovedl:', e.message);
       }
     },
   };
@@ -227,14 +271,31 @@ function localBackend() {
   });
   const pending = new Map();
   const online = (c, who) => Date.now() - (Number(localStorage.getItem(K(c, 'pres:' + who))) || 0) < 6000;
+  // napodobuje pravidla databáze: smazat jde jen vypršelou (nebo neúplnou) hru
+  const dropRoom = async (c) => {
+    const m = rd(K(c, 'meta'));
+    if (m && Date.now() - lastActivity(m, rd(K(c, 'active'))) <= ROOM_TTL) return false;
+    const pre = `ds:${c}:`;
+    const keys = [];
+    for (let k = 0; k < localStorage.length; k++) {
+      const key = localStorage.key(k);
+      if (key && key.startsWith(pre)) keys.push(key);
+    }
+    keys.forEach((k) => wr(k, null));
+    return true;
+  };
 
   return {
     kind: 'local',
     uid,
+    now: () => Date.now(),
+    dropRoom,
 
     async createRoom(c, state) {
+      await dropRoom(c);
       if (rd(K(c, 'meta'))) return false;
       wr(K(c, 'meta'), { hostUid: uid, created: Date.now() });
+      wr(K(c, 'active'), Date.now());
       wr(K(c, 'members'), { [uid]: true });
       wr(K(c, 'state'), { s: JSON.stringify(state), v: 1 });
       return true;
@@ -248,6 +309,7 @@ function localBackend() {
         h.onState(v ? JSON.parse(v.s) : null);
       };
       const emitMeta = () => h.onMeta(rd(K(c, 'meta')));
+      const emitActive = () => h.onActive(rd(K(c, 'active')));
       const emitPres = () => {
         const out = {};
         const pre = K(c, 'pres:');
@@ -263,6 +325,7 @@ function localBackend() {
       };
       offs.push(on(K(c, 'state'), emitState));
       offs.push(on(K(c, 'meta'), emitMeta));
+      offs.push(on(K(c, 'active'), emitActive));
       offs.push(on(K(c, 'pres:'), emitPres));
       offs.push(
         on(K(c, 'rep:' + uid), (k, r) => {
@@ -282,6 +345,7 @@ function localBackend() {
       window.addEventListener('beforeunload', bye);
       setTimeout(() => {
         emitMeta();
+        emitActive();
         emitState();
       });
       return () => {
@@ -342,6 +406,7 @@ function localBackend() {
       wr(K(c, 'act:' + id), null);
       if (newState) wr(K(c, 'members'), membersOf(newState));
       wr(K(c, 'rep:' + actor), { id, err, t: Date.now() });
+      if (cur) wr(K(c, 'active'), Date.now());
     },
 
     // napodobuje pravidla databáze: převzít lze jen, když je hostitel offline a já jsem hráč
@@ -351,6 +416,15 @@ function localBackend() {
       if (!m || online(c, m.hostUid) || !members[uid]) return false;
       wr(K(c, 'meta'), { hostUid: uid, created: m.created });
       return true;
+    },
+
+    async sweep() {
+      const codes = new Set();
+      for (let k = 0; k < localStorage.length; k++) {
+        const m = (localStorage.key(k) || '').match(/^ds:([A-Z0-9]{5}):/);
+        if (m) codes.add(m[1]);
+      }
+      for (const c of codes) await dropRoom(c);
     },
   };
 }
